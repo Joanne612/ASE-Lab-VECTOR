@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { api } from "@/lib/api";
 
 const PANEL_TOP = "363px";
-
 const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[640px]";
 
 /* LAYER 1 — BACKGROUND */
@@ -50,7 +49,27 @@ function PanelLayer() {
 function TextLayer() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api("/register", {
+        method: "POST",
+        body: JSON.stringify({ username, email, password, dateOfBirth }),
+      });
+      router.push("/"); // halaman login kamu ada di "/"
+    } catch (err) {
+      alert("Register gagal, coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <div className="relative z-20 min-h-screen">
       <div className={`${COLUMN} flex flex-col px-4 sm:px-6 md:px-8`}>
@@ -73,10 +92,7 @@ function TextLayer() {
           {/* Form */}
           <form
             className="mt-5 space-y-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              router.push("/dashboard");
-            }}
+            onSubmit={handleSubmit}
           >
             <input
               type="text"
@@ -121,9 +137,10 @@ function TextLayer() {
             </div>
 
             <input
-              type="number"
-              min="1"
-              placeholder="Umur"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
               required
               className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
             />
@@ -132,7 +149,9 @@ function TextLayer() {
               type="submit"
               className="mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] sm:h-[53px]"
             >
-              Buat akun
+              <a href="/" className="mt-5 h-[49px] w-full text-[18px] font-medium text-white,[text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] sm:h-[53px]">
+                Buat akun
+              </a>
             </button>
           </form>
 

@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { api } from "@/lib/api";
 
 const PANEL_TOP = "363px";
-
 const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[640px]";
 
 /* LAYER 1 — BACKGROUND */
@@ -50,6 +49,48 @@ function PanelLayer() {
 function TextLayer() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Email dan kata sandi wajib diisi.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const payload = response?.data ?? response;
+      const accessToken = payload?.access_token ?? payload?.accessToken ?? payload?.token;
+      const refreshToken = payload?.refresh_token ?? payload?.refreshToken;
+
+      if (!accessToken) {
+        throw new Error("Respons login tidak valid");
+      }
+
+      localStorage.setItem("accessToken", accessToken);
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
+      }
+
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err.message || "Login gagal. Coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="relative z-20 min-h-screen">
@@ -71,32 +112,32 @@ function TextLayer() {
           </h2>
 
           {/* Form */}
-          <form className="mt-4 space-y-3" 
-          onSubmit={(e) => {
-            e.preventDefault();
-            router.push("/dashboard");
-          }}>
-            {/* Username */}
+          <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
             <input
-              type="text"
-              placeholder="Nama panggilan" required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              required
               className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
             />
-            
 
-            {/* Password */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="Kata sandi" required
-                className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Kata sandi"
+                required
+                className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 pr-12 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
               />
 
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#B6B6C0] transition hover:bg-gray-100">
+                className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#B6B6C0] transition hover:bg-gray-100"
+              >
                 {showPassword ? (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.99 0 1.953-.138 2.86-.396M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.774 3.162 10.066 7.5a10.523 10.523 0 01-4.293 5.142M6.228 6.228L3 3m3.228 3.228l3.37 3.37m0 0a3 3 0 104.243 4.243m-4.243-4.243L3 3m3.228 3.228l3.37 3.37m6.598 6.598L21 21" />
@@ -111,12 +152,18 @@ function TextLayer() {
               </button>
             </div>
 
-            {/* Tombol masuk */}
+            {error ? (
+              <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {error}
+              </p>
+            ) : null}
+
             <button
               type="submit"
-              className="mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] sm:h-[53px]"
+              disabled={loading}
+              className="mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 sm:h-[53px]"
             >
-              Masuk
+              {loading ? "Memproses..." : "Masuk"}
             </button>
           </form>
 
