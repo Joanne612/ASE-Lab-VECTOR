@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
+import CalendarPicker from "./CalendarPicker";
 
 const PANEL_TOP = "363px";
 /* ---------- DATA (ganti dengan data dari backend) ---------- */
@@ -173,6 +174,7 @@ function Header() {
       <div className="relative flex h-full flex-col justify-between px-5 pt-10 pb-8">
         <div className="flex items-start justify-between">
           {/* Badge bulan (ikon kalender) */}
+          <CalendarPicker>
           <div className="relative h-[84px] w-[84px] shrink-0">
             {/* Kotak luar */}
             <div
@@ -208,7 +210,8 @@ function Header() {
               </span>
             </div>
           </div>
- 
+          </CalendarPicker>
+
           {/* Sapaan + avatar */}
           <div className="flex items-center gap-3">
             <div className="text-right">
@@ -221,7 +224,7 @@ function Header() {
           </div>
         </div>
  
-        {/* Pengeluaran & pemasukan */}
+        {/* Pengeluaran */}
         <div className="grid grid-cols-2 gap-4">
           <div>
           <p className="flex flex-row items-center gap-2 whitespace-nowrap text-[16px] text-[#6A6E79]">
@@ -287,31 +290,59 @@ function MainMenu() {
 }
 
 /* LAYER 4 — RIWAYAT TRANSAKSI */
-function TransactionItem({ item }) {
+/* Kelompokkan item: item ber-jam memulai blok baru, item tanpa jam ikut blok di atasnya */
+function groupByTime(items) {
+  return items.reduce((blocks, item) => {
+    if (item.time || blocks.length === 0) {
+      blocks.push({ time: item.time, items: [item] });
+    } else {
+      blocks[blocks.length - 1].items.push(item);
+    }
+    return blocks;
+  }, []);
+}
+
+function TransactionCard({ item }) {
   return (
-    <li className="flex items-stretch gap-3">
-      {/* Kolom waktu + garis timeline */}
-      <div className="relative flex w-14 shrink-0 justify-center">
-        <span className="absolute inset-y-0 left-1/2 w-[3px] -translate-x-1/2 rounded bg-[#8A8D99]/70" />
-        {item.time && (
-          <span className="relative z-10 mt-3 self-start rounded bg-white/80 px-1 text-[11px] font-bold text-[#6A6E79]">
-            {item.time}
+    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-white/70 bg-white/20 p-1.5 pr-3 shadow-[0_3px_10px_rgba(0,0,0,0.06)] backdrop-blur-md">
+      <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#E9D9FA] to-[#C7A3E9] text-white shadow-inner">
+        <Icon name={item.icon} className="h-7 w-7" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[16px] font-medium text-[#8A8D99]">{item.title}</p>
+        {item.note && <p className="truncate text-[12px] text-[#8A8D99]">{item.note}</p>}
+      </div>
+      <p className="text-[16px] font-medium text-[#6A6E79]">{rupiah(item.amount)}</p>
+    </div>
+  );
+}
+
+function TransactionBlock({ time, items }) {
+  return (
+    <div className="flex items-stretch gap-3">
+      {/* KIRI: label jam + satu garis penuh setinggi blok */}
+      <div className="relative w-14 shrink-0">
+        {time && (
+          <span className="absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-bold text-[#6A6E79]">
+            {time}
           </span>
         )}
+        <span
+          className={`absolute bottom-0 left-1/2 w-[3px] -translate-x-1/2 rounded-full bg-[#8A8D99]/70 ${
+            time ? "top-9" : "top-0"
+          }`}
+        />
       </div>
 
-      {/* Kartu transaksi */}
-      <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/70 bg-white/20 p-1.5 pr-3 shadow-[0_3px_10px_rgba(0,0,0,0.06)] backdrop-blur-md">
-        <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#E9D9FA] to-[#C7A3E9] text-white shadow-inner">
-          <Icon name={item.icon} className="h-7 w-7" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[16px] font-medium text-[#8A8D99]">{item.title}</p>
-          {item.note && <p className="truncate text-[12px] text-[#8A8D99]">{item.note}</p>}
-        </div>
-        <p className="text-[16px] font-medium text-[#6A6E79]">{rupiah(item.amount)}</p>
-      </div>
-    </li>
+      {/* KANAN: kartu-kartu, jaraknya diatur sendiri lewat gap */}
+      <ul className="flex min-w-0 flex-1 flex-col gap-2">
+        {items.map((item, i) => (
+          <li key={i}>
+            <TransactionCard item={item} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -324,11 +355,12 @@ function TransactionHistory() {
             <h3 className="text-[16px] font-bold text-[#8A8D99]">{group.date}</h3>
             <span className="text-[11px] font-bold text-[#8A8D99]">{group.day}</span>
           </div>
-          <ul className="flex flex-col">
-            {group.items.map((item, i) => (
-              <TransactionItem key={i} item={item} />
+
+          <div className="flex flex-col gap-4">
+            {groupByTime(group.items).map((block, i) => (
+              <TransactionBlock key={i} time={block.time} items={block.items} />
             ))}
-          </ul>
+          </div>
         </div>
       ))}
     </section>

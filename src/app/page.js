@@ -84,7 +84,7 @@ function TextLayer() {
         localStorage.setItem("refreshToken", refreshToken);
       }
 
-      router.push("/dashboard");
+      router.push("/homepage");
     } catch (err) {
       setError(err.message || "Login gagal. Coba lagi.");
     } finally {
