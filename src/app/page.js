@@ -10,15 +10,37 @@ const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[6
 /* LAYER 1 — BACKGROUND */
 function BackgroundLayer() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8]">
+      {/* fade out ke bawah */}
+      <div
+        className="absolute left-0 right-0 top-0 h-[400px]"
+        style={{
+          backgroundImage: `url(/login-mobile-atas.svg)`,
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "top center",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+        }}
+      />
 
-      {/* BACKGROUND ATAS */}
-      <div className="absolute top-0 left-0 right-0 h-[400px]" style={{
-        backgroundImage : `url(/login-mobile-atas.svg)`,
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "top center",
-      }}></div>
+      {/* fade di atas dan kiri */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-[320px]"
+        style={{
+          backgroundImage: `url(/login-mobile-bawah.svg)`,
+          backgroundSize: "70%",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "bottom right",
+          opacity: 0.2,
+          WebkitMaskImage:
+            "linear-gradient(to top, #000 50%, transparent 100%), linear-gradient(to left, #000 50%, transparent 100%)",
+          WebkitMaskComposite: "source-in",
+          maskImage:
+            "linear-gradient(to top, #000 50%, transparent 100%), linear-gradient(to left, #000 50%, transparent 100%)",
+          maskComposite: "intersect",
+        }}
+      />
     </div>
   );
 }
@@ -95,7 +117,7 @@ function TextLayer() {
   return (
     <div className="relative z-20 min-h-screen">
       <div className={`${COLUMN} flex flex-col px-4 sm:px-6 md:px-8`}>
-        {/* Heading — duduk di atas background, tepat di atas panel */}
+        {/* Heading */}
         <header style={{ height: PANEL_TOP }} className="flex shrink-0 flex-col justify-end pb-9 text-right">
           <h1 className="text-[26px] font-bold leading-tight tracking-[-0.5px] text-[#686B78] sm:text-[30px]">
             Uangmu, ceritamu.
@@ -105,7 +127,7 @@ function TextLayer() {
           </p>
         </header>
 
-        {/* CARD */}
+        {/* Card */}
         <section className="pb-10 pt-7">
           <h2 className="text-[23px] font-bold tracking-[-0.3px] text-[#686B78] sm:text-[25px]">
             Selamat datang kembali!
@@ -167,7 +189,6 @@ function TextLayer() {
             </button>
           </form>
 
-          {/* Atau */}
           <div className="my-6 flex items-center gap-4">
             <div className="h-px flex-1 bg-[#C9C9CF]" />
             <span className="text-[18px] text-[#9B9BA5]">Atau</span>
@@ -200,7 +221,6 @@ function TextLayer() {
             </svg>
           </div>
 
-          {/* Daftar */}
           <div className="mt-6 text-center">
             <p className="text-[16px] text-[#9B9BA5]">Belum punya akun?</p>
             <a href="/register" className="mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition">
@@ -213,15 +233,12 @@ function TextLayer() {
   );
 }
 
-/* ==========================================================
-   PAGE — tumpukan 3 lapisan
-========================================================== */
 export default function LoginPage() {
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[#F8F6FA]">
-      <BackgroundLayer /> {/* 1. background + semua SVG */}
-      <PanelLayer /> {/* 2. panel putih */}
-      <TextLayer /> {/* 3. tulisan & form */}
+      <BackgroundLayer /> 
+      <PanelLayer /> 
+      <TextLayer />
     </main>
   );
 }

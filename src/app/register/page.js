@@ -10,15 +10,37 @@ const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[6
 /* LAYER 1 — BACKGROUND */
 function BackgroundLayer() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8]">
+      {/* fade out ke bawah */}
+      <div
+        className="absolute left-0 right-0 top-0 h-[400px]"
+        style={{
+          backgroundImage: `url(/login-mobile-atas.svg)`,
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "top center",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+        }}
+      />
 
-      {/* BACKGROUND ATAS */}
-      <div className="absolute top-0 left-0 right-0 h-[400px]" style={{
-        backgroundImage : `url(/login-mobile-atas.svg)`,
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "top center",
-      }}></div>
+      {/* fade di atas dan kiri */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-[320px]"
+        style={{
+          backgroundImage: `url(/login-mobile-bawah.svg)`,
+          backgroundSize: "70%",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "bottom right",
+          opacity: 0.2,
+          WebkitMaskImage:
+            "linear-gradient(to top, #000 50%, transparent 100%), linear-gradient(to left, #000 50%, transparent 100%)",
+          WebkitMaskComposite: "source-in",
+          maskImage:
+            "linear-gradient(to top, #000 50%, transparent 100%), linear-gradient(to left, #000 50%, transparent 100%)",
+          maskComposite: "intersect",
+        }}
+      />
     </div>
   );
 }
@@ -32,7 +54,6 @@ function PanelLayer() {
           style={{ top: PANEL_TOP }}
           className="absolute inset-x-0 bottom-0 rounded-t-[30px] bg-white/80 shadow-[0_-5px_30px_rgba(90,80,120,0.06)] backdrop-blur-xl sm:rounded-[30px]"
         />
-        {/* Phone Image */}
         <div className="absolute bottom-0 left-0 right-0 h-[320px]" style={{
           backgroundImage : `url(/login-mobile-bawah.svg)`,
           backgroundSize: "70%",
@@ -63,7 +84,7 @@ function TextLayer() {
         method: "POST",
         body: JSON.stringify({ username, email, password, dateOfBirth }),
       });
-      router.push("/"); // halaman login kamu ada di "/"
+      router.push("/");
     } catch (err) {
       alert("Register gagal, coba lagi.");
     } finally {
@@ -83,7 +104,7 @@ function TextLayer() {
           </p>
         </header>
 
-        {/* CARD */}
+        {/* Card */}
         <section className="pb-10 pt-7">
           <h2 className="text-[23px] font-bold tracking-[-0.3px] text-[#686B78] sm:text-[25px]">
             Yuk, mulai perjalananmu!
@@ -155,7 +176,6 @@ function TextLayer() {
             </button>
           </form>
 
-          {/* Atau */}
           <div className="my-6 flex items-center gap-4">
             <div className="h-px flex-1 bg-[#C9C9CF]" />
             <span className="text-[18px] text-[#9B9BA5]">Atau</span>
@@ -188,7 +208,6 @@ function TextLayer() {
             </svg>
           </div>
 
-          {/* Masuk */}
           <div className="mt-6 text-center">
             <p className="text-[16px] text-[#9B9BA5]">Sudah punya akun?</p>
             <a href="/" className="mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition">
@@ -201,9 +220,6 @@ function TextLayer() {
   );
 }
 
-/* ==========================================================
-   PAGE — tumpukan 3 lapisan
-========================================================== */
 export default function RegisterPage() {
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-gradient-to-r from-[#E1DCE3] to-[#F1E9E8]">

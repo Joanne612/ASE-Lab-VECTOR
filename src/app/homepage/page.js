@@ -29,7 +29,7 @@ const TRANSACTIONS = [
 
 const rupiah = (n) => n.toLocaleString("id-ID");
 
-/* ---------- ICONS ---------- */
+/* Icons */
 const ICON_PATHS = {
   shirt: <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" />,
   drink: <path d="M10 2v2M14 2v2M6 2v2M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" />,
@@ -48,9 +48,7 @@ const ICON_PATHS = {
     <circle cx="11" cy="13" r="8" />
     <circle cx="11" cy="13" r="4" />
     <circle cx="11" cy="13" r="1" />
-    {/* batang panah */}
     <path d="M11 13 L20 4" />
-    {/* bulu panah di ekor */}
     <path d="M20 4 L20.5 1.5M20 4 L22.5 3.5" />
     <path d="M17.5 6.5 L18 4M17.5 6.5 L20 6" />
   </>
@@ -102,28 +100,41 @@ function Icon({ name, className = "h-6 w-6" }) {
 function BackgroundLayer() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8]">
+      {/* Layer atas: fade out ke bawah */}
+      <div
+        className="absolute left-0 right-0 top-0 h-[400px]"
+        style={{
+          backgroundImage: `url(/login-mobile-atas.svg)`,
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "top center",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+        }}
+      />
 
-      {/* BACKGROUND ATAS */}
-      <div className="absolute top-0 left-0 right-0 h-[400px]" style={{
-        backgroundImage : `url(/login-mobile-atas.svg)`,
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "top center",
-      }}></div>
-      {/* Phone Image */}
-      <div className="absolute bottom-0 left-0 right-0 h-[320px]" style={{
-        backgroundImage : `url(/login-mobile-bawah.svg)`,
-        backgroundSize: "70%",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "bottom right",
-        opacity: 0.2,
-      }}></div>
-      
+      {/* fade di atas dan kiri */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-[320px]"
+        style={{
+          backgroundImage: `url(/login-mobile-bawah.svg)`,
+          backgroundSize: "70%",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "bottom right",
+          opacity: 0.2,
+          WebkitMaskImage:
+            "linear-gradient(to top, #000 50%, transparent 100%), linear-gradient(to left, #000 50%, transparent 100%)",
+          WebkitMaskComposite: "source-in",
+          maskImage:
+            "linear-gradient(to top, #000 50%, transparent 100%), linear-gradient(to left, #000 50%, transparent 100%)",
+          maskComposite: "intersect",
+        }}
+      />
     </div>
   );
 }
 
-/* LAYER 2 — HEADER (kartu ringkasan) */
+/* LAYER 2 — HEADER */
 
 const HEADER_PATH =
   "M0 32 Q0 0 32 0 L114 0 C124 0 127 5 129 12 C131 20 134 27 146 27 L244 27 " +
@@ -147,14 +158,12 @@ const headerMaskStyle = {
 function Header() {
   return (
     <header className="relative mt-6 h-[250px] w-full">
-      {/* Kaca (blur + warna) dipotong mengikuti bentuk kartu */}
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-white/40 backdrop-blur-xl"
         style={headerMaskStyle}
       />
- 
-      {/* Garis tepi mengikuti bentuk yang sama */}
+
       <svg
         aria-hidden="true"
         viewBox="0 0 390 250"
@@ -173,10 +182,8 @@ function Header() {
       {/* Konten */}
       <div className="relative flex h-full flex-col justify-between px-5 pt-10 pb-8">
         <div className="flex items-start justify-between">
-          {/* Badge bulan (ikon kalender) */}
           <CalendarPicker>
           <div className="relative h-[84px] w-[84px] shrink-0">
-            {/* Kotak luar */}
             <div
               className="absolute inset-0 rounded-[20px] border-[3px] border-white/90"
               style={{
@@ -186,7 +193,7 @@ function Header() {
               }}
             />
 
-            {/* Panel dalam: gradasi ungu -> biru keabu-abuan */}
+            {/* gradasi */}
             <div
               className="absolute inset-x-[8px] bottom-[8px] top-[12px] rounded-[10px]"
               style={{
@@ -196,7 +203,7 @@ function Header() {
               }}
             />
 
-            {/* Dua cincin */}
+            {/* Cincin */}
             <span className="absolute left-[26px] top-[4px] h-[11px] w-[2.5px] rounded-full bg-white shadow-[0_1px_2px_rgba(90,80,140,0.25)]" />
             <span className="absolute right-[26px] top-[4px] h-[11px] w-[2.5px] rounded-full bg-white shadow-[0_1px_2px_rgba(90,80,140,0.25)]" />
 
@@ -212,7 +219,7 @@ function Header() {
           </div>
           </CalendarPicker>
 
-          {/* Sapaan + avatar */}
+          {/* Profile */}
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-[18px] font-bold leading-tight text-[#6A6E79]">Hai, Cio</p>
@@ -249,7 +256,7 @@ function Header() {
         </div>
       </div>
  
-      {/* Tombol tambah: pusatnya tepat di garis bawah kartu, di dalam lekukan kubah */}
+      {/* Tombol tambah */}
       <Link
         href="/transaksi/tambah"
         aria-label="Tambah transaksi"
@@ -290,7 +297,6 @@ function MainMenu() {
 }
 
 /* LAYER 4 — RIWAYAT TRANSAKSI */
-/* Kelompokkan item: item ber-jam memulai blok baru, item tanpa jam ikut blok di atasnya */
 function groupByTime(items) {
   return items.reduce((blocks, item) => {
     if (item.time || blocks.length === 0) {
@@ -320,7 +326,6 @@ function TransactionCard({ item }) {
 function TransactionBlock({ time, items }) {
   return (
     <div className="flex items-stretch gap-3">
-      {/* KIRI: label jam + satu garis penuh setinggi blok */}
       <div className="relative w-14 shrink-0">
         {time && (
           <span className="absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-bold text-[#6A6E79]">
@@ -334,7 +339,6 @@ function TransactionBlock({ time, items }) {
         />
       </div>
 
-      {/* KANAN: kartu-kartu, jaraknya diatur sendiri lewat gap */}
       <ul className="flex min-w-0 flex-1 flex-col gap-2">
         {items.map((item, i) => (
           <li key={i}>
@@ -367,13 +371,10 @@ function TransactionHistory() {
   );
 }
 
-/* PAGE */
 export default function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#F1ECF5]">
       <BackgroundLayer />
-
-      {/* Konten: penuh di mobile, dibatasi lebarnya dan dipusatkan di layar besar */}
       <div className="relative z-10 mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[640px]">
         <Header />
         <MainMenu />

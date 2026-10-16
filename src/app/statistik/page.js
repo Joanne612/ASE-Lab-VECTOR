@@ -19,7 +19,7 @@ const DONUT_START = -17;
 const rupiah = (n) => n.toLocaleString("id-ID");
 const pct = (n) => `${n.toFixed(2)}%`;
 
-/* ---------- ICONS ---------- */
+/* Icons */
 const ICON_PATHS = {
   shirt: <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" />,
   drink: <path d="M10 2v2M14 2v2M6 2v2M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" />,
@@ -88,6 +88,7 @@ function Icon({ name, className = "h-6 w-6" }) {
 function BackgroundLayer() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8]">
+      {/* fade out ke bawah */}
       <div
         className="absolute left-0 right-0 top-0 h-[400px]"
         style={{
@@ -95,8 +96,12 @@ function BackgroundLayer() {
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "top center",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
         }}
       />
+
+      {/* fade di atas dan kiri */}
       <div
         className="absolute bottom-0 left-0 right-0 h-[320px]"
         style={{
@@ -105,6 +110,12 @@ function BackgroundLayer() {
           backgroundRepeat: "no-repeat",
           backgroundPosition: "bottom right",
           opacity: 0.2,
+          WebkitMaskImage:
+            "linear-gradient(to top, #000 50%, transparent 100%), linear-gradient(to left, #000 50%, transparent 100%)",
+          WebkitMaskComposite: "source-in",
+          maskImage:
+            "linear-gradient(to top, #000 50%, transparent 100%), linear-gradient(to left, #000 50%, transparent 100%)",
+          maskComposite: "intersect",
         }}
       />
     </div>
@@ -289,7 +300,7 @@ function DonutChart() {
         </g>
       </svg>
 
-      {/* lubang tengah (efek cekung) */}
+      {/* efek cekung */}
       <div className="absolute inset-[30px] rounded-full bg-[#F6F3F3] shadow-[inset_0_4px_10px_rgba(120,100,160,0.2),inset_0_-3px_6px_rgba(255,255,255,0.9)]" />
     </div>
   );
@@ -374,7 +385,6 @@ function StatistikPanel({ title = "Pengeluaran" }) {
   );
 }
 
-/* PAGE */
 export default function StatistikPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#F1ECF5]">

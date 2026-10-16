@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 const TABS = ["Harian", "Mingguan", "Bulanan", "Tahunan"];
 const DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
@@ -95,7 +96,6 @@ function Calendar({ onConfirm }) {
 
   return (
     <div className="relative h-[452px] w-[371px] max-w-[calc(100vw-24px)] rounded-[25px] border-2 border-white bg-white font-[Poppins,sans-serif] text-[#6A6E79] shadow-[0_8px_4px_rgba(255,255,255,0.12),inset_5px_4px_4px_rgba(154,168,189,0.2),inset_-5px_-4px_4px_rgba(154,168,189,0.2)] backdrop-blur-[4px]">
-      {/* Tab: 4 kolom sama lebar, muat semua tanpa scroll */}
       <div className="absolute left-[14px] top-[11px] grid h-[57px] w-[343px] grid-cols-4 gap-[8px] pt-px">
         {TABS.map((t) => (
           <button
@@ -230,7 +230,6 @@ function Calendar({ onConfirm }) {
       </>
       )}
 
-      {/* Dinaikkan dari 398px -> 382px supaya jarak ke tepi bawah lebih seimbang */}
       <button
         type="button"
         onClick={() => onConfirm(selected)}
@@ -242,7 +241,7 @@ function Calendar({ onConfirm }) {
   );
 }
 
-export default function CalendarPicker({ children }) {
+export default function CalendarPicker({ children, modal = false }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -256,11 +255,24 @@ export default function CalendarPicker({ children }) {
       >
         {children}
       </button>
-      {open && (
+      {open && !modal && (
         <div className="absolute -left-[6px] top-[96px] z-50">
           <Calendar onConfirm={() => setOpen(false)} />
         </div>
       )}
+      {open &&
+        modal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-3 backdrop-blur-[2px]"
+            onClick={() => setOpen(false)}
+          >
+            <div onClick={(e) => e.stopPropagation()}>
+              <Calendar onConfirm={() => setOpen(false)} />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
