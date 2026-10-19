@@ -2,17 +2,26 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { selectionFromDate, toLocalDateString } from "@/lib/format";
 
-const TABS = ["Harian", "Mingguan", "Bulanan", "Tahunan"];
+const TABS = [
+  { key: "harian", label: "Harian" },
+  { key: "mingguan", label: "Mingguan" },
+  { key: "bulanan", label: "Bulanan" },
+  { key: "tahunan", label: "Tahunan" },
+];
+const ALL_MODES = TABS.map((t) => t.key);
 const DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const YEARS = Array.from({ length: 11 }, (_, i) => 2020 + i);
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
 
+// Tanpa backdrop-blur: kalender berlatar putih opak, jadi blur tidak terlihat
+// tapi tetap dihitung untuk setiap tombol.
 const GLASS =
-  "border border-white/40 bg-[rgba(221,230,245,0.15)] backdrop-blur-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2),0_8px_30px_rgba(255,255,255,0.12)]";
+  "border border-white/40 bg-[rgba(221,230,245,0.15)] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2),0_8px_30px_rgba(255,255,255,0.12)]";
 
 const TAB_ACTIVE =
-  "border border-white/50 bg-[rgba(221,230,245,0.15)] backdrop-blur-[10px] shadow-[inset_8px_-10px_8px_rgba(255,255,255,0.2),inset_-3px_7px_8px_rgba(0,0,0,0.15),0_8px_30px_rgba(255,255,255,0.12)]";
+  "border border-white/50 bg-[rgba(221,230,245,0.15)] shadow-[inset_8px_-10px_8px_rgba(255,255,255,0.2),inset_-3px_7px_8px_rgba(0,0,0,0.15),0_8px_30px_rgba(255,255,255,0.12)]";
 
 function Chevron({ direction }) {
   return (
@@ -41,10 +50,17 @@ function NavButton({ direction, label, onClick, className = "" }) {
   );
 }
 
-function Calendar({ onConfirm }) {
-  const [tab, setTab] = useState("Harian");
-  const [view, setView] = useState({ year: 2026, month: 7 });
-  const [selected, setSelected] = useState({ year: 2026, month: 7, day: 14 });
+/**
+ * value: { mode, year, month, day } (lihat selectionFromDate di lib/format).
+ * maxDate: "YYYY-MM-DD"; hari setelahnya tidak bisa dipilih.
+ */
+function Calendar({ value, modes, maxDate, onConfirm }) {
+  const tabs = TABS.filter((t) => modes.includes(t.key));
+  const initial = value ?? selectionFromDate(new Date(), modes[0]);
+
+  const [tab, setTab] = useState(modes.includes(initial.mode) ? initial.mode : modes[0]);
+  const [view, setView] = useState({ year: initial.year, month: initial.month });
+  const [selected, setSelected] = useState({ year: initial.year, month: initial.month, day: initial.day });
 
   const firstWeekday = new Date(view.year, view.month, 1).getDay();
   const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
@@ -59,9 +75,12 @@ function Calendar({ onConfirm }) {
       return { year: d.getFullYear(), month: d.getMonth() };
     });
 
-  const isWeekly = tab === "Mingguan";
-  const isMonthly = tab === "Bulanan";
-  const isYearly = tab === "Tahunan";
+  const isWeekly = tab === "mingguan";
+  const isMonthly = tab === "bulanan";
+  const isYearly = tab === "tahunan";
+
+  const isAfterMax = (day) =>
+    Boolean(maxDate) && toLocalDateString(new Date(view.year, view.month, day)) > maxDate;
 
   const pickYear = (year) => {
     setView((v) => ({ ...v, year }));
@@ -95,18 +114,21 @@ function Calendar({ onConfirm }) {
       : null;
 
   return (
-    <div className="relative h-[452px] w-[371px] max-w-[calc(100vw-24px)] rounded-[25px] border-2 border-white bg-white font-[Poppins,sans-serif] text-[#6A6E79] shadow-[0_8px_4px_rgba(255,255,255,0.12),inset_5px_4px_4px_rgba(154,168,189,0.2),inset_-5px_-4px_4px_rgba(154,168,189,0.2)] backdrop-blur-[4px]">
-      <div className="absolute left-[14px] top-[11px] grid h-[57px] w-[343px] grid-cols-4 gap-[8px] pt-px">
-        {TABS.map((t) => (
+    <div className="relative h-[452px] w-[371px] max-w-[calc(100vw-24px)] rounded-[25px] border-2 border-white bg-white font-[Poppins,sans-serif] text-[#6A6E79] shadow-[0_8px_4px_rgba(255,255,255,0.12),inset_5px_4px_4px_rgba(154,168,189,0.2),inset_-5px_-4px_4px_rgba(154,168,189,0.2)]">
+      <div
+        className="absolute left-[14px] top-[11px] grid h-[57px] w-[343px] gap-[8px] pt-px"
+        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+      >
+        {tabs.map((t) => (
           <button
-            key={t}
+            key={t.key}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(t.key)}
             className={`h-[48px] min-w-0 rounded-[15px] text-[14px] font-medium ${
-              tab === t ? TAB_ACTIVE : GLASS
+              tab === t.key ? TAB_ACTIVE : GLASS
             }`}
           >
-            {t}
+            {t.label}
           </button>
         ))}
       </div>
@@ -212,8 +234,9 @@ function Calendar({ onConfirm }) {
             <button
               key={day}
               type="button"
+              disabled={isAfterMax(day)}
               onClick={() => setSelected({ ...view, day })}
-              className="flex h-[32px] w-[48px] items-center justify-center"
+              className="flex h-[32px] w-[48px] items-center justify-center disabled:opacity-30"
             >
               <span
                 className={`flex h-[34px] w-[37px] items-center justify-center text-[16px] font-medium ${
@@ -232,7 +255,7 @@ function Calendar({ onConfirm }) {
 
       <button
         type="button"
-        onClick={() => onConfirm(selected)}
+        onClick={() => onConfirm({ mode: tab, ...selected })}
         className={`absolute left-1/2 top-[382px] h-[38px] w-[134px] -translate-x-1/2 rounded-[10px] text-[18px] font-medium text-white ${GLASS} !bg-[rgba(122,83,177,0.7)]`}
       >
         Konfirmasi
@@ -241,8 +264,22 @@ function Calendar({ onConfirm }) {
   );
 }
 
-export default function CalendarPicker({ children, modal = false }) {
+export default function CalendarPicker({
+  children,
+  value,
+  onConfirm,
+  modes = ALL_MODES,
+  maxDate,
+  modal = false,
+}) {
   const [open, setOpen] = useState(false);
+
+  const confirm = (selection) => {
+    setOpen(false);
+    onConfirm?.(selection);
+  };
+
+  const calendar = <Calendar value={value} modes={modes} maxDate={maxDate} onConfirm={confirm} />;
 
   return (
     <div className="relative">
@@ -255,11 +292,7 @@ export default function CalendarPicker({ children, modal = false }) {
       >
         {children}
       </button>
-      {open && !modal && (
-        <div className="absolute -left-[6px] top-[96px] z-50">
-          <Calendar onConfirm={() => setOpen(false)} />
-        </div>
-      )}
+      {open && !modal && <div className="absolute -left-[6px] top-[96px] z-50">{calendar}</div>}
       {open &&
         modal &&
         createPortal(
@@ -267,9 +300,7 @@ export default function CalendarPicker({ children, modal = false }) {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-3 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
           >
-            <div onClick={(e) => e.stopPropagation()}>
-              <Calendar onConfirm={() => setOpen(false)} />
-            </div>
+            <div onClick={(e) => e.stopPropagation()}>{calendar}</div>
           </div>,
           document.body
         )}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { useActionState, useState } from "react";
+import Link from "next/link";
+import { login } from "@/app/actions/auth";
+import FieldError from "@/components/FieldError";
 
 const PANEL_TOP = "363px";
 const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[640px]";
@@ -15,7 +16,7 @@ function BackgroundLayer() {
       <div
         className="absolute left-0 right-0 top-0 h-[400px]"
         style={{
-          backgroundImage: `url(/login-mobile-atas.svg)`,
+          backgroundImage: `url(/login-mobile-atas.webp)`,
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "top center",
@@ -28,7 +29,7 @@ function BackgroundLayer() {
       <div
         className="absolute bottom-0 left-0 right-0 h-[320px]"
         style={{
-          backgroundImage: `url(/login-mobile-bawah.svg)`,
+          backgroundImage: `url(/login-mobile-bawah.webp)`,
           backgroundSize: "70%",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "bottom right",
@@ -56,7 +57,7 @@ function PanelLayer() {
         />
         {/* Phone Image */}
         <div className="absolute bottom-0 left-0 right-0 h-[320px]" style={{
-          backgroundImage : `url(/login-mobile-bawah.svg)`,
+          backgroundImage : `url(/login-mobile-bawah.webp)`,
           backgroundSize: "70%",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "bottom right",
@@ -69,50 +70,9 @@ function PanelLayer() {
 
 /* LAYER 3 — TULISAN & TOMBOL */
 function TextLayer() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-
-    if (!email || !password) {
-      setError("Email dan kata sandi wajib diisi.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await api("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-
-      const payload = response?.data ?? response;
-      const accessToken = payload?.access_token ?? payload?.accessToken ?? payload?.token;
-      const refreshToken = payload?.refresh_token ?? payload?.refreshToken;
-
-      if (!accessToken) {
-        throw new Error("Respons login tidak valid");
-      }
-
-      localStorage.setItem("accessToken", accessToken);
-      if (refreshToken) {
-        localStorage.setItem("refreshToken", refreshToken);
-      }
-
-      router.push("/homepage");
-    } catch (err) {
-      setError(err.message || "Login gagal. Coba lagi.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Login berjalan di Server Action: token langsung disimpan di cookie httpOnly.
+  const [state, formAction, pending] = useActionState(login, undefined);
 
   return (
     <div className="relative z-20 min-h-screen">
@@ -134,22 +94,30 @@ function TextLayer() {
           </h2>
 
           {/* Form */}
-          <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              required
-              className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
-            />
+          <form className="mt-4 space-y-3" action={formAction}>
+            <div>
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                defaultValue={state?.values?.email}
+                placeholder="Email"
+                aria-label="Email"
+                aria-invalid={Boolean(state?.fieldErrors?.email)}
+                aria-describedby="login-email-error"
+                required
+                className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
+              />
+              <FieldError id="login-email-error" messages={state?.fieldErrors?.email} />
+            </div>
 
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                name="password"
+                autoComplete="current-password"
                 placeholder="Kata sandi"
+                aria-label="Kata sandi"
                 required
                 className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 pr-12 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
               />
@@ -174,18 +142,18 @@ function TextLayer() {
               </button>
             </div>
 
-            {error ? (
-              <p className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-                {error}
+            {state?.message ? (
+              <p role="alert" className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {state.message}
               </p>
             ) : null}
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={pending}
               className="mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 sm:h-[53px]"
             >
-              {loading ? "Memproses..." : "Masuk"}
+              {pending ? "Memproses..." : "Masuk"}
             </button>
           </form>
 
@@ -223,9 +191,9 @@ function TextLayer() {
 
           <div className="mt-6 text-center">
             <p className="text-[16px] text-[#9B9BA5]">Belum punya akun?</p>
-            <a href="/register" className="mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition">
+            <Link href="/register" className="mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition">
               Daftar sekarang
-            </a>
+            </Link>
           </div>
         </section>
       </div>
