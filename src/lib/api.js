@@ -1,20 +1,27 @@
-const BASE_URL = process.env.NEXT_PUBLIC_ASE_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "";
+/*
+ * Client API. Semua request lewat BFF Next (/api/...), jadi tidak ada token di
+ * browser: cookie httpOnly terkirim otomatis karena satu origin.
+ */
+export class ApiError extends Error {
+  constructor(status, message, fieldErrors = {}) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    // Bentuk dari BE: { field: ["pesan", ...] }
+    this.fieldErrors = fieldErrors;
+  }
+}
 
-export async function api(path, options = {}) {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = `${BASE_URL.replace(/\/$/, "")}${normalizedPath}`;
-
-  const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    ...options,
+export async function apiFetch(path, { method = "GET", body, signal } = {}) {
+  const response = await fetch(`/api${path}`, {
+    method,
+    headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   });
 
-  let data = null;
   const text = await response.text();
-
+  let data = null;
   if (text) {
     try {
       data = JSON.parse(text);
@@ -24,13 +31,15 @@ export async function api(path, options = {}) {
   }
 
   if (!response.ok) {
-    const message =
-      data?.message ||
-      data?.error ||
-      data?.detail ||
-      `Error ${response.status}`;
-    throw new Error(message);
+    throw new ApiError(
+      response.status,
+      data?.message || `Error ${response.status}`,
+      data?.errors ?? {},
+    );
   }
 
   return data;
 }
+
+/** Fetcher default SWR: key berupa path, mis. "/users/me". */
+export const fetcher = (path) => apiFetch(path);

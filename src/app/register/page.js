@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { useActionState, useState } from "react";
+import Link from "next/link";
+import { register } from "@/app/actions/auth";
+import FieldError from "@/components/FieldError";
+import { useToday } from "@/lib/use-today";
 
 const PANEL_TOP = "363px";
 const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[640px]";
@@ -15,7 +17,7 @@ function BackgroundLayer() {
       <div
         className="absolute left-0 right-0 top-0 h-[400px]"
         style={{
-          backgroundImage: `url(/login-mobile-atas.svg)`,
+          backgroundImage: `url(/login-mobile-atas.webp)`,
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "top center",
@@ -28,7 +30,7 @@ function BackgroundLayer() {
       <div
         className="absolute bottom-0 left-0 right-0 h-[320px]"
         style={{
-          backgroundImage: `url(/login-mobile-bawah.svg)`,
+          backgroundImage: `url(/login-mobile-bawah.webp)`,
           backgroundSize: "70%",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "bottom right",
@@ -55,7 +57,7 @@ function PanelLayer() {
           className="absolute inset-x-0 bottom-0 rounded-t-[30px] bg-white/80 shadow-[0_-5px_30px_rgba(90,80,120,0.06)] backdrop-blur-xl sm:rounded-[30px]"
         />
         <div className="absolute bottom-0 left-0 right-0 h-[320px]" style={{
-          backgroundImage : `url(/login-mobile-bawah.svg)`,
+          backgroundImage : `url(/login-mobile-bawah.webp)`,
           backgroundSize: "70%",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "bottom right",
@@ -67,30 +69,16 @@ function PanelLayer() {
 }
 
 /* LAYER 3 — TULISAN & TOMBOL */
-function TextLayer() {
-  const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [loading, setLoading] = useState(false);
+const INPUT_CLASS =
+  "h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4";
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await api("/register", {
-        method: "POST",
-        body: JSON.stringify({ username, email, password, dateOfBirth }),
-      });
-      router.push("/");
-    } catch (err) {
-      alert("Register gagal, coba lagi.");
-    } finally {
-      setLoading(false);
-    }
-  }
+function TextLayer() {
+  const [showPassword, setShowPassword] = useState(false);
+  // Register berjalan di Server Action; kalau berhasil user langsung masuk ke /homepage.
+  const [state, formAction, pending] = useActionState(register, undefined);
+  const today = useToday();
+  const errors = state?.fieldErrors;
+
   return (
     <div className="relative z-20 min-h-screen">
       <div className={`${COLUMN} flex flex-col px-4 sm:px-6 md:px-8`}>
@@ -111,31 +99,63 @@ function TextLayer() {
           </h2>
 
           {/* Form */}
-          <form
-            className="mt-5 space-y-3"
-            onSubmit={handleSubmit}
-          >
-            <input
-              type="text"
-              placeholder="Nama panggilan"
-              required
-              className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
-            />
+          <form className="mt-5 space-y-3" action={formAction}>
+            <div>
+              <input
+                type="text"
+                name="username"
+                autoComplete="username"
+                defaultValue={state?.values?.username}
+                placeholder="Nama panggilan"
+                aria-label="Nama panggilan"
+                aria-invalid={Boolean(errors?.username)}
+                aria-describedby="register-username-hint"
+                required
+                minLength={3}
+                maxLength={30}
+                pattern="[A-Za-z0-9_]+"
+                title="3–30 karakter: huruf, angka, atau garis bawah (_), tanpa spasi"
+                className={INPUT_CLASS}
+              />
+              {errors?.username ? (
+                <FieldError id="register-username-hint" messages={errors.username} />
+              ) : (
+                <p id="register-username-hint" className="mt-1 px-1 text-[13px] text-[#6A6E79]/70">
+                  3–30 karakter: huruf, angka, atau _ (tanpa spasi)
+                </p>
+              )}
+            </div>
 
-            <input
-              type="email"
-              placeholder="Email"
-              required
-              className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
-            />
+            <div>
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                defaultValue={state?.values?.email}
+                placeholder="Email"
+                aria-label="Email"
+                aria-invalid={Boolean(errors?.email)}
+                aria-describedby="register-email-error"
+                required
+                className={INPUT_CLASS}
+              />
+              <FieldError id="register-email-error" messages={errors?.email} />
+            </div>
 
             {/* Kata sandi */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="Kata sandi"
+                name="password"
+                autoComplete="new-password"
+                placeholder="Kata sandi (min. 8 karakter)"
+                aria-label="Kata sandi"
+                aria-invalid={Boolean(errors?.password)}
+                aria-describedby="register-password-error"
                 required
-                className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 pr-12 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
+                minLength={8}
+                maxLength={128}
+                className={`${INPUT_CLASS} pr-12`}
               />
 
               <button
@@ -156,23 +176,36 @@ function TextLayer() {
                 )}
               </button>
             </div>
+            <FieldError id="register-password-error" messages={errors?.password} />
 
-            <input
-              type="date"
-              value={dateOfBirth}
-              onChange={(e) => setDateOfBirth(e.target.value)}
-              max={new Date().toISOString().split("T")[0]}
-              required
-              className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
-            />
-            
+            <div>
+              <input
+                type="date"
+                name="dateOfBirth"
+                defaultValue={state?.values?.dateOfBirth}
+                // Tanggal lokal; toISOString() memakai UTC dan bisa bergeser sehari.
+                max={today ?? undefined}
+                aria-label="Tanggal lahir"
+                aria-invalid={Boolean(errors?.dateOfBirth)}
+                aria-describedby="register-dob-error"
+                required
+                className={INPUT_CLASS}
+              />
+              <FieldError id="register-dob-error" messages={errors?.dateOfBirth} />
+            </div>
+
+            {state?.message ? (
+              <p role="alert" className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {state.message}
+              </p>
+            ) : null}
+
             <button
               type="submit"
-              className="mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] sm:h-[53px]"
+              disabled={pending}
+              className="mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 sm:h-[53px]"
             >
-              <a href="/" className="mt-5 h-[49px] w-full text-[18px] font-medium text-white,[text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] sm:h-[53px]">
-                Buat akun
-              </a>
+              {pending ? "Memproses..." : "Buat akun"}
             </button>
           </form>
 
@@ -210,9 +243,9 @@ function TextLayer() {
 
           <div className="mt-6 text-center">
             <p className="text-[16px] text-[#9B9BA5]">Sudah punya akun?</p>
-            <a href="/" className="mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition">
+            <Link href="/" className="mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition">
               Masuk sekarang
-            </a>
+            </Link>
           </div>
         </section>
       </div>
