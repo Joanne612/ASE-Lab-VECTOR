@@ -35,7 +35,6 @@ function Legend({ items }) {
   );
 }
 
-/* BARIS KATEGORI */
 function CategoryRow({ c }) {
   return (
     <li className="flex items-center gap-[18px]">
@@ -70,7 +69,7 @@ function CategoryRow({ c }) {
   );
 }
 
-function StatistikContent({ summary, error }) {
+function StatistikContent({ summary, error, type, palette, emptyText, chartLabel }) {
   if (!summary && !error) {
     return (
       <div className="mt-3 flex items-center gap-[22px]" aria-busy="true" aria-label="Memuat statistik">
@@ -88,23 +87,23 @@ function StatistikContent({ summary, error }) {
     return <p className="py-8 text-center text-[15px] text-[#8A8D99]">Gagal memuat statistik.</p>;
   }
 
-  const items = summary.byCategory
-    .filter((c) => c.type === "EXPENSE" && c.percentage > 0)
+  const items = summary?.byCategory
+    .filter((c) => c.type === type && c.percentage > 0)
     .map((c, i) => ({
       ...c,
       key: c.categoryId ?? "uncategorized",
       value: c.percentage,
-      ...PALETTE[i % PALETTE.length],
+      ...palette[i % palette.length],
     }));
 
   if (items.length === 0) {
-    return <p className="py-8 text-center text-[15px] text-[#8A8D99]">Belum ada pengeluaran di periode ini.</p>;
+    return <p className="py-8 text-center text-[15px] text-[#8A8D99]">{emptyText}</p>;
   }
 
   return (
     <>
       <div className="mt-3 flex items-center gap-[22px]">
-        <DonutChart items={items} label="Diagram pengeluaran per kategori" />
+        <DonutChart items={items} label={chartLabel} />
         <Legend items={items} />
       </div>
 
@@ -117,23 +116,54 @@ function StatistikContent({ summary, error }) {
   );
 }
 
+function StatistikSection({ title, backHref, className = "", children }) {
+  return (
+    <section
+      className={`mx-3 rounded-[28px] border border-white/60 bg-white/20 px-[17px] pb-6 pt-3 backdrop-blur-xl ${className}`}
+    >
+      <div className="flex items-center gap-2">
+        {backHref && (
+          <Link href={backHref} aria-label="Kembali" className="flex h-8 w-8 items-center justify-center text-[#6A6E79]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M15 18 9 12l6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        )}
+        <h2 className="text-[22px] font-medium text-[#8A8D99]">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 export default function StatistikPage() {
   const { range } = usePeriod();
   // Key sama dengan header, jadi data ringkasan tidak diambil dua kali.
   const { data: summary, error } = useSummary(range);
 
   return (
-    <section className="mx-3 mt-[20px] rounded-t-[28px] border border-white/60 bg-white/20 px-[17px] pb-6 pt-3 backdrop-blur-xl">
-      <div className="flex items-center gap-2">
-        <Link href="/homepage" aria-label="Kembali" className="flex h-8 w-8 items-center justify-center text-[#6A6E79]">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M15 18 9 12l6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </Link>
-        <h2 className="text-[22px] font-medium text-[#8A8D99]">Pengeluaran</h2>
-      </div>
+    <>
+      <StatistikSection title="Pengeluaran" backHref="/homepage" className="mt-[20px]">
+        <StatistikContent
+          summary={summary}
+          error={error}
+          type="EXPENSE"
+          palette={PALETTE}
+          emptyText="Belum ada pengeluaran di periode ini."
+          chartLabel="Diagram pengeluaran per kategori"
+        />
+      </StatistikSection>
 
-      <StatistikContent summary={summary} error={error} />
-    </section>
+      <StatistikSection title="Pemasukan" className="mt-4 mb-6">
+        <StatistikContent
+          summary={summary}
+          error={error}
+          type="INCOME"
+          palette={PALETTE}
+          emptyText="Belum ada pemasukan di periode ini."
+          chartLabel="Diagram pemasukan per kategori"
+        />
+      </StatistikSection>
+    </>
   );
 }

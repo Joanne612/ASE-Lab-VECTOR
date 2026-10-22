@@ -57,6 +57,17 @@ const ICON_PATHS = {
     </>
   ),
   idea: <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4" />,
+  simulation: (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="4"
+        strokeLinecap="round" strokeLinejoin="round">
+      {/* sumbu */}
+      <path d="M8 6v34h34" />
+      {/* garis tren naik */}
+      <path d="M14 30l9-9 6 6 11-12" />
+      {/* kepala panah */}
+      <path d="M32 15h8v8" />
+    </svg>
+  ),
   handCoin: (
     <>
       <circle cx="17" cy="6" r="3.5" />

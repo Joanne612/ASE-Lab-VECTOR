@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import { formatDigitsInput, parseRupiahInput } from "@/lib/format";
@@ -13,7 +14,7 @@ const PERIODS = [
   { key: "MONTHLY", label: "Bulan" },
 ];
 
-// Dipakai kalau GET /savings/ratio gagal; sama dengan rasio default BE.
+// Dipakai kalau GET /savings/ratio gagal; sama dengan rasio default BE
 const FALLBACK_RATIO = { needsPct: 60, savingsPct: 30, funPct: 10 };
 
 const PANEL_CLASS = "mx-3 mb-8 mt-5 rounded-[28px] border border-white/70 bg-white/30 px-5 pb-6 pt-6 backdrop-blur-xl";
@@ -43,7 +44,7 @@ function TargetForm({ saved, defaultRatio }) {
     const ratio = saved ?? defaultRatio ?? FALLBACK_RATIO;
 
     try {
-      // Disimpan agar analisis target tabungan di BE memakai pemasukan ini.
+      // Disimpan agar analisis target tabungan di BE memakai pemasukan ini
       await saveSavingRatio({
         needsPct: ratio.needsPct,
         savingsPct: ratio.savingsPct,
@@ -62,6 +63,11 @@ function TargetForm({ saved, defaultRatio }) {
   return (
     <form onSubmit={handleSubmit} className={PANEL_CLASS}>
       <div className="flex items-center gap-3 text-[#8A8D99]">
+        <Link href="/homepage" aria-label="Kembali" className="flex h-8 w-8 shrink-0 items-center justify-center text-[#6A6E79]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 18 9 12l6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
         <Icon name="handCoin" className="h-10 w-10 text-white drop-shadow-[0_2px_4px_rgba(120,100,160,0.3)]" />
         <h2 className="text-[20px] font-medium">Total Uang Jajan</h2>
       </div>
@@ -123,7 +129,7 @@ function TargetForm({ saved, defaultRatio }) {
 export default function TargetPage() {
   const { data, error } = useSavingRatio();
 
-  // Form baru dirender setelah data tersimpan dimuat, supaya prefill tidak menimpa ketikan user.
+  // Form baru dirender setelah data tersimpan dimuat, supaya prefill tidak menimpa ketikan user
   if (!data && !error) {
     return <div className={`${PANEL_CLASS} h-[420px] animate-pulse`} aria-busy="true" aria-label="Memuat" />;
   }
