@@ -1,0 +1,5 @@
+# File yang tidak ikut ter-upload saat deploy lewat Vercel CLI.
+# Konfigurasi production diambil dari Environment Variables di dashboard Vercel,
+# bukan dari .env lokal.
+.env*
+!.env.example
