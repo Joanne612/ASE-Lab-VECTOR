@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import useSWR from "swr";
+import {
+  formatRisk,
+  instrumentHistoryPath,
+  instrumentPath,
+  unwrapSimulationData,
+} from "@/lib/simulation";
 
 // Format angka
 const rupiah = (n) => `Rp${Math.round(n).toLocaleString("id-ID")}`;
@@ -11,7 +19,7 @@ const bayanganTeks = { textShadow: "0 2px 4px rgba(120,100,160,0.2)" };
 function BackLink() {
   return (
     <Link
-      href="/simulasi/pilih-saham"
+      href="/saham"
       aria-label="Kembali"
       className="relative z-20 flex h-8 w-8 shrink-0 items-center justify-center text-[#6A6E79] transition hover:opacity-80 active:scale-95"
     >
@@ -29,19 +37,36 @@ function BackLink() {
 }
 
 export default function DetailSahamPage() {
+  const { code } = useParams();
   const [tab, setTab] = useState("Bulan");
+  const range = { Minggu: "WEEK", Bulan: "MONTH", Tahun: "YEAR" }[tab];
+  const { data: detailResponse, error: detailError, isLoading: detailLoading } = useSWR(
+    code ? instrumentPath(code) : null,
+  );
+  const { data: historyResponse, error: historyError } = useSWR(
+    code ? instrumentHistoryPath(code, range) : null,
+  );
+  const dataSaham = unwrapSimulationData(detailResponse);
+  const history = unwrapSimulationData(historyResponse);
+  const points = Array.isArray(history) ? history : Array.isArray(history?.data) ? history.data : [];
+  const prices = points.map((point) => Number(point.price)).filter(Number.isFinite);
+  const minimumPrice = prices.length ? Math.min(...prices) : 0;
+  const maximumPrice = prices.length ? Math.max(...prices) : 0;
+  const priceRange = maximumPrice - minimumPrice || 1;
+  const path = points
+    .map((point, index) => {
+      const x = points.length > 1 ? (index / (points.length - 1)) * 100 : 50;
+      const y = 95 - ((Number(point.price) - minimumPrice) / priceRange) * 90;
+      return `${index === 0 ? "M" : "L"} ${x},${y}`;
+    })
+    .join(" ");
 
-  // Mock data saham
-  const dataSaham = {
-    code: "NUSA",
-    name: "PT Nusantara Abadi Tbk",
-    price: 2500,
-    change: 4.2,
-    risiko: "Tinggi",
-    potensi: "Tinggi",
-    deskripsi:
-      "NUSA merupakan aset simulasi yang digunakan untuk mempelajari perubahan nilai investasi.",
-  };
+  if (detailLoading) {
+    return <main className="px-6 py-12 text-center text-[#8A8D99]">Memuat detail saham...</main>;
+  }
+  if (detailError || !dataSaham) {
+    return <main role="alert" className="px-6 py-12 text-center text-[#B94A48]">{detailError?.message ?? "Saham tidak ditemukan."}</main>;
+  }
 
   return (
     <main className="relative min-h-screen px-[13px] pb-8 pt-[20px]">
@@ -67,7 +92,7 @@ export default function DetailSahamPage() {
             </span>
           </div>
           <p className="mt-1 text-[12px] font-semibold text-[#9B7FD6]" style={bayanganTeks}>
-            {persen(dataSaham.change)} hari ini
+            {persen(dataSaham.changePct)} hari ini
           </p>
         </section>
 
@@ -93,11 +118,8 @@ export default function DetailSahamPage() {
           <div className="flex h-44 w-full">
             {/* Label Sumbu Y */}
             <div className="flex flex-col justify-between text-[11px] font-medium text-[#8A8D99] pr-2">
-              <span>Rp2.700</span>
-              <span>Rp2.600</span>
-              <span>Rp2.500</span>
-              <span>Rp2.400</span>
-              <span>Rp2.300</span>
+              <span>{rupiah(maximumPrice || Number(dataSaham.price))}</span>
+              <span>{rupiah(minimumPrice || Number(dataSaham.price))}</span>
             </div>
 
             {/* Area Grafik SVG */}
@@ -111,38 +133,30 @@ export default function DetailSahamPage() {
               </div>
 
               <svg className="h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path
-                  d="M 0,95 L 12,80 L 22,88 L 32,75 L 42,90 L 52,60 L 62,72 L 72,55 L 82,25 L 88,40 L 100,5"
-                  fill="none"
-                  stroke="#9B7FD6"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+                <path d={path} fill="none" stroke="#9B7FD6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
           </div>
 
           <div className="mt-3 flex justify-around pl-10 text-[11px] font-medium text-[#8A8D99]">
-            <span>M1</span>
-            <span>M2</span>
-            <span>M3</span>
-            <span>M4</span>
+            <span>{points[0]?.date ?? "-"}</span>
+            <span>{points.at(-1)?.date ?? "-"}</span>
           </div>
         </div>
+        {historyError ? <p role="alert" className="mt-2 text-[12px] text-[#B94A48]">{historyError.message}</p> : null}
 
         {/* Info Risiko & Potensi Keuntungan */}
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-2xl border border-white/60 bg-white/30 p-3.5 backdrop-blur-md">
             <span className="text-[11px] font-semibold text-[#A1A4B0]">Risiko</span>
             <p className="mt-1 text-right text-[15px] font-bold text-[#8B61D4]">
-              {dataSaham.risiko}
+              {formatRisk(dataSaham.riskLevel)}
             </p>
           </div>
           <div className="rounded-2xl border border-white/60 bg-white/30 p-3.5 backdrop-blur-md">
             <span className="text-[11px] font-semibold text-[#A1A4B0]">Potensi Keuntungan</span>
             <p className="mt-1 text-right text-[15px] font-bold text-[#8B61D4]">
-              {dataSaham.potensi}
+              {formatRisk(dataSaham.returnPotential)}
             </p>
           </div>
         </div>
@@ -157,9 +171,11 @@ export default function DetailSahamPage() {
 
         {/* Tombol Aksi */}
         <div className="mt-8 flex justify-center">
-          <button className="rounded-2xl bg-gradient-to-b from-[#A98BE0] to-[#8C6BD4] px-8 py-3.5 text-[15px] font-bold text-white shadow-[0_6px_16px_rgba(120,100,160,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] transition active:scale-95">
+          <Link
+            href={`/saham/detail/${encodeURIComponent(dataSaham.code)}/investasi`}
+            className="rounded-[8px] bg-gradient-to-b from-[#A98BE0] to-[#9272D0] px-[21px] py-[6px] text-[12px] font-semibold text-white shadow-[0_4px_8px_rgba(120,100,160,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] transition active:scale-95">
             Investasi Sekarang
-          </button>
+          </Link>
         </div>
 
       </div>

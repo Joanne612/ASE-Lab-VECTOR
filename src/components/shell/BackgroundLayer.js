@@ -1,6 +1,6 @@
 export default function BackgroundLayer() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8]">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 bg-[#f3ecfa] bg-[url('/nama-background.png')] bg-cover bg-top bg-no-repeat">
       {/* fade out ke bawah */}
       <div
         className="absolute left-0 right-0 top-0 h-[400px]"
