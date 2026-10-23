@@ -14,6 +14,7 @@ const ALLOWED_RESOURCES = new Set([
   "savings",
   "goals",
   "income-ideas",
+  "simulation",
 ]);
 
 // Sama dengan batas express.json() di BE: body yang lebih besar pasti ditolak
@@ -77,7 +78,11 @@ async function handler(request, { params }) {
   if (request.method !== "GET" && isCrossOrigin(request)) return jsonError(403, "Forbidden");
 
   let { accessToken, refreshToken } = await getSession();
-  if (!refreshToken) return jsonError(401, "Silakan masuk terlebih dahulu.");
+  const publicSimulationInstrument =
+    request.method === "GET" && path[0] === "simulation" && path[1] === "instruments";
+  if (!refreshToken && !publicSimulationInstrument) {
+    return jsonError(401, "Silakan masuk terlebih dahulu.");
+  }
 
   const target = `/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`;
   let body;
@@ -97,6 +102,7 @@ async function handler(request, { params }) {
   };
 
   try {
+    if (publicSimulationInstrument && !refreshToken) return toNextResponse(await send());
     if (!accessToken && !(await renew())) return expireSession();
 
     let response = await send();

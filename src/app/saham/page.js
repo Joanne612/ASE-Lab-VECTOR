@@ -1,12 +1,8 @@
 "use client";
 
 import Link from "next/link";
-
-const SAHAM = [
-  { code: "NUSA", name: "PT Nusantara Abadi Tbk", price: 2500, change: 4.2, risiko: "Tinggi" },
-  { code: "Karya", name: "PT Karya Maju Tbk", price: 1850, change: 1.8, risiko: "Sedang" },
-  { code: "Tekno", name: "PT Tekonologi Global Tbk", price: 3200, change: 2.4, risiko: "Tinggi" },
-];
+import useSWR from "swr";
+import { instrumentListPath, simulationInstruments, formatRisk } from "@/lib/simulation";
 
 // Format angka
 const rupiah = (n) => `Rp${Math.round(n).toLocaleString("id-ID")}`;
@@ -51,15 +47,15 @@ function KartuSaham({ s }) {
           className="pt-[2px] text-[11px] font-semibold tabular-nums text-[#9B7FD6]"
           style={bayanganTeks}
         >
-          {persen(s.change)} hari ini
+          {persen(s.changePct)} hari ini
         </span>
 
         <div className="flex flex-col items-end gap-[6px]">
           <span className="pt-[2px] text-[11px] font-semibold text-[#9B7FD6]" style={bayanganTeks}>
-            Risiko {s.risiko}
+            Risiko {formatRisk(s.riskLevel)}
           </span>
           <Link
-            href={`/simulasi/saham/detail/${s.code}`}
+            href={`/saham/detail/${encodeURIComponent(s.code)}`}
             className="rounded-[8px] bg-gradient-to-b from-[#A98BE0] to-[#9272D0] px-[21px] py-[6px] text-[12px] font-semibold text-white shadow-[0_4px_8px_rgba(120,100,160,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] transition active:scale-95"
           >
             Lihat Detail
@@ -71,6 +67,9 @@ function KartuSaham({ s }) {
 }
 
 export default function PilihSahamPage() {
+  const { data, error, isLoading } = useSWR(instrumentListPath("STOCK"));
+  const saham = simulationInstruments(data);
+
   return (
     <main className="min-h-screen px-[13px] pb-8 pt-[20px]">
       <header className="relative z-10 mb-[14px] flex items-center gap-[10px] pl-[6px]">
@@ -80,14 +79,20 @@ export default function PilihSahamPage() {
         </h1>
       </header>
 
-      {/* Daftar saham */}
-      <ul className="flex flex-col gap-[10px]">
-        {SAHAM.map((s) => (
-          <li key={s.code}>
-            <KartuSaham s={s} />
-          </li>
-        ))}
-      </ul>
+      {isLoading ? <p className="px-4 py-8 text-center text-[#8A8D99]">Memuat saham...</p> : null}
+      {error ? <p role="alert" className="px-4 py-8 text-center text-[#B94A48]">{error.message}</p> : null}
+      {!isLoading && !error && saham.length === 0 ? (
+        <p className="px-4 py-8 text-center text-[#8A8D99]">Belum ada saham simulasi.</p>
+      ) : null}
+      {saham.length > 0 ? (
+        <ul className="flex flex-col gap-[10px]">
+          {saham.map((s) => (
+            <li key={s.code}>
+              <KartuSaham s={s} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </main>
   );
 }
