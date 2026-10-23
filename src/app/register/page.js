@@ -137,6 +137,9 @@ function TextLayer() {
                 aria-invalid={Boolean(errors?.email)}
                 aria-describedby="register-email-error"
                 required
+                // Pendaftaran hanya untuk Gmail; dicek ulang di Server Action dan BE.
+                pattern="[^@\s]+@[Gg][Mm][Aa][Ii][Ll]\.[Cc][Oo][Mm]"
+                title="Gunakan alamat Gmail, contoh: nama@gmail.com"
                 className={INPUT_CLASS}
               />
               <FieldError id="register-email-error" messages={errors?.email} />

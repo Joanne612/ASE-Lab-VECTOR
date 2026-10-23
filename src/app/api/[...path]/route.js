@@ -9,6 +9,7 @@ import { clearSession, getSession, setSession } from "@/lib/server/session";
  */
 const ALLOWED_RESOURCES = new Set([
   "users",
+  "accounts",
   "transactions",
   "categories",
   "savings",

@@ -1,17 +1,48 @@
 "use client";
 
-import { Suspense } from "react";
-import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import useSWR from "swr";
+import { finishSimulation, sessionPath, simulationSession } from "@/lib/simulation";
 
 const rupiah = (n) => `Rp ${Math.round(n).toLocaleString("id-ID")}`;
 const bayanganTeks = { textShadow: "0 2px 4px rgba(120,100,160,0.2)" };
 
 function SuksesContent() {
+  const router = useRouter();
   const { id } = useParams();
   const searchParams = useSearchParams();
-  const nominalParam = Number(searchParams.get("nominal"));
-  const nominal = Number.isFinite(nominalParam) && nominalParam > 0 ? nominalParam : 0;
+  const sessionId = searchParams.get("sessionId");
+  const investasiHref = `/reksadana/detail/${encodeURIComponent(id)}/investasi`;
+
+  const { data } = useSWR(sessionId ? sessionPath(sessionId) : null);
+  const session = simulationSession(data);
+  const nominal = Number(session?.investedAmount ?? 0);
+  const [busy, setBusy] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Halaman ini hanya bermakna untuk sesi yang sudah dibuat.
+  useEffect(() => {
+    if (!sessionId) router.replace(investasiHref);
+  }, [sessionId, investasiHref, router]);
+
+  // Alur reksa dana langsung ke hasil: sesi dimajukan sampai checkpoint
+  // terakhir (1 Tahun) di server, baru hasilnya ditampilkan.
+  async function lihatHasil() {
+    if (!sessionId || busy) return;
+    setBusy(true);
+    setErrorMessage("");
+    try {
+      const finished = await finishSimulation(sessionId);
+      if (finished?.status !== "FINISHED") {
+        throw new Error("Simulasi belum selesai. Coba lagi.");
+      }
+      router.push(`${investasiHref}/selesai?sessionId=${encodeURIComponent(sessionId)}`);
+    } catch (error) {
+      setErrorMessage(error.message);
+      setBusy(false);
+    }
+  }
 
   return (
     <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
@@ -54,12 +85,20 @@ function SuksesContent() {
           Ini adalah transaksi virtual untuk simulasi pembelajaran.
         </p>
 
-        <Link
-          href={`/reksadana/detail/${encodeURIComponent(id)}/investasi/selesai?nominal=${nominal}`}
+        {errorMessage ? (
+          <p role="alert" className="mt-3 rounded-xl border border-white/60 bg-white/40 px-3 py-2 text-center text-[12px] text-[#B94A48]">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={lihatHasil}
+          disabled={!session || busy}
           className="mt-auto w-44 rounded-xl bg-gradient-to-b from-[#A98BE0] to-[#8C6BD4] py-2.5 text-center text-[14px] font-semibold text-white shadow-[0_6px_16px_rgba(120,100,160,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] transition active:scale-95"
         >
-          Lihat Hasil Simulasi
-        </Link>
+          {busy ? "Memproses..." : "Lihat Hasil Simulasi"}
+        </button>
       </div>
     </main>
   );

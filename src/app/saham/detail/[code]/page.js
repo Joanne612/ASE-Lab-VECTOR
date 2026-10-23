@@ -165,7 +165,7 @@ export default function DetailSahamPage() {
         <div className="mt-6">
           <h2 className="text-[14px] font-bold text-[#757885]">Tentang saham</h2>
           <p className="mt-2 text-[13px] leading-relaxed text-[#8A8D99]">
-            {dataSaham.deskripsi}
+            {dataSaham.description}
           </p>
         </div>
 

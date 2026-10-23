@@ -1,8 +1,13 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import useSWR from "swr";
+import { advanceSimulationSafely, sessionPath, simulationSession } from "@/lib/simulation";
+
+// Label checkpoint sebelum data sesi termuat; sama dengan CHECKPOINTS di BE.
+const LABEL_CHECKPOINT = ["1 Hari", "1 Bulan", "6 Bulan", "1 Tahun"];
 
 // Format angka
 const rupiah = (n) => `Rp ${Math.round(n).toLocaleString("id-ID")}`;
@@ -53,25 +58,57 @@ function IkonJam() {
 }
 
 function InvestasiBerjalanContent() {
+  const router = useRouter();
   const { code } = useParams();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId");
-  // Mock data (nantinya ambil dari params / API)
-  const saldoAwal = 500000;
-  const investasi = 500000;
   const kodeSaham = code ?? "NUSA";
+  const investasiHref = `/saham/detail/${encodeURIComponent(kodeSaham)}/investasi`;
+  const selesaiHref = `${investasiHref}/selesai?sessionId=${encodeURIComponent(sessionId ?? "")}`;
 
-  // Mock simulasi kenaikan nilai per periode (%)
-  const periode = [
-    { label: "1 Hari", persen: 0 },
-    { label: "1 Bulan", persen: 2.5 },
-    { label: "6 Bulan", persen: 8 },
-    { label: "1 Tahun", persen: 15 },
-  ];
+  const { data: sessionResponse, mutate: setSession } = useSWR(sessionId ? sessionPath(sessionId) : null);
+  const session = simulationSession(sessionResponse);
+  const [pilihan, setPilihan] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [aktif, setAktif] = useState(0);
-  const persenAktif = periode[aktif].persen;
-  const nilaiSekarang = investasi * (1 + persenAktif / 100);
+  // Halaman ini hanya bermakna untuk sesi yang sudah dibuat.
+  useEffect(() => {
+    if (!sessionId) router.replace(investasiHref);
+  }, [sessionId, investasiHref, router]);
+
+  const saldoAwal = Number(session?.startingCash ?? 0);
+  const investasi = Number(session?.investedAmount ?? 0);
+  const periode = session?.checkpoints ?? LABEL_CHECKPOINT.map((label) => ({ label, reached: false }));
+  // currentStep: 0 = baru membeli, 1..4 = checkpoint yang sudah dicapai. BE tidak
+  // mengirim nilai checkpoint yang belum dicapai, jadi hanya itu yang bisa dipilih.
+  const currentStep = Number(session?.currentStep ?? 0);
+  const aktif = pilihan !== null && pilihan < currentStep ? pilihan : Math.max(currentStep - 1, 0);
+  const checkpointAktif = periode[aktif];
+  const nilaiSekarang = Number(checkpointAktif?.reached ? checkpointAktif.value : (session?.currentValue ?? 0));
+  const persenAktif = Number(checkpointAktif?.reached ? checkpointAktif.returnPct : (session?.returnPct ?? 0));
+
+  async function lanjutkan() {
+    if (!session || busy) return;
+    if (session.status === "FINISHED") {
+      router.push(selesaiHref);
+      return;
+    }
+
+    setBusy(true);
+    setErrorMessage("");
+    try {
+      // 409 (sudah dimajukan dari tab lain) cukup dimuat ulang.
+      const advanced = await advanceSimulationSafely(sessionId);
+      const next = advanced ? await setSession(advanced, { revalidate: false }) : await setSession();
+      setPilihan(null);
+      if (next?.status === "FINISHED") router.push(selesaiHref);
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
@@ -127,7 +164,7 @@ function InvestasiBerjalanContent() {
                 <button
                   key={p.label}
                   type="button"
-                  onClick={() => setAktif(i)}
+                  onClick={() => p.reached && setPilihan(i)}
                   className="flex flex-col items-center gap-2 transition active:scale-95"
                 >
                   <span className="flex h-6 items-center justify-center">
@@ -172,14 +209,22 @@ function InvestasiBerjalanContent() {
           </div>
         </div>
 
-        {/* Tombol aksi */}
+        {errorMessage ? (
+          <p role="alert" className="mt-3 rounded-xl border border-white/60 bg-white/40 px-3 py-2 text-center text-[12px] text-[#B94A48]">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        {/* Tombol aksi: maju satu checkpoint; setelah checkpoint terakhir ke halaman hasil. */}
         <div className="mt-8 flex justify-center">
-          <Link
-            href={`/saham/detail/${encodeURIComponent(kodeSaham)}/investasi/selesai${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`}
+          <button
+            type="button"
+            onClick={lanjutkan}
+            disabled={!session || busy}
             className="rounded-xl bg-gradient-to-b from-[#A98BE0] to-[#8C6BD4] px-8 py-2.5 text-[14px] font-semibold text-white shadow-[0_6px_16px_rgba(120,100,160,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] transition active:scale-95"
           >
             Lanjutkan
-          </Link>
+          </button>
         </div>
       </div>
     </main>

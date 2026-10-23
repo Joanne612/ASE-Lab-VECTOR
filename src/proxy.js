@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { REFRESH_COOKIE } from "@/lib/session-cookies";
 
-const PROTECTED_PREFIXES = ["/homepage", "/statistik", "/target", "/ide", "/transaksi"];
+// /saham dan /reksadana sengaja tidak dilindungi: daftar instrumen simulasi publik.
+const PROTECTED_PREFIXES = ["/homepage", "/statistik", "/target", "/ide", "/transaksi", "/simulasi"];
 const GUEST_ONLY_PATHS = ["/", "/register"];
 
 /*

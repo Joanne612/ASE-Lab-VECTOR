@@ -1,9 +1,14 @@
 "use client";
 
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import useSWR from "swr";
+import { chartLabels, chartPath, sessionPath, signOf, simulationSession } from "@/lib/simulation";
 
 // Format angka
 const rupiah = (n) => `Rp ${Math.round(n).toLocaleString("id-ID")}`;
+const persen = (n) => `${Math.abs(n).toLocaleString("id-ID", { maximumFractionDigits: 2 })}%`;
 const bayanganTeks = { textShadow: "0 2px 4px rgba(120,100,160,0.2)" };
 
 function BackLink() {
@@ -26,25 +31,35 @@ function BackLink() {
   );
 }
 
-export default function SimulasiSelesaiPage() {
-  // Mock data (nantinya ambil dari params / API)
-  const modalAwal = 500000;
-  const keuntungan = 120000;
-  const nilaiAkhir = modalAwal + keuntungan;
-  const returnPersen = Math.round((keuntungan / modalAwal) * 100);
+function SimulasiSelesaiContent() {
+  const router = useRouter();
+  const { code } = useParams();
+  const sessionId = useSearchParams().get("sessionId");
+  const { data } = useSWR(sessionId ? sessionPath(sessionId) : null);
+  const session = simulationSession(data);
+  const result = session?.result;
 
-  // Label sumbu Y (atas ke bawah)
-  const labelY = ["Rp 650k", "Rp 600k", "Rp 550k", "Rp 500k", "Rp 450k"];
+  // Hasil baru ada setelah checkpoint terakhir; sesi yang masih berjalan
+  // dikembalikan ke halaman checkpoint.
+  useEffect(() => {
+    const investasiHref = `/saham/detail/${encodeURIComponent(code ?? "")}/investasi`;
+    if (!sessionId) router.replace(investasiHref);
+    else if (session && session.status !== "FINISHED") {
+      router.replace(`${investasiHref}/sukses?sessionId=${encodeURIComponent(sessionId)}`);
+    }
+  }, [code, router, session, sessionId]);
+
+  const modalAwal = Number(result?.investedAmount ?? session?.investedAmount ?? 0);
+  const nilaiAkhir = Number(result?.finalValue ?? session?.currentValue ?? 0);
+  const keuntungan = Number(result?.profit ?? 0);
+  const returnPersen = Number(result?.returnPct ?? 0);
+
+  // Nilai investasi dari hari beli sampai 1 tahun, posisi x sesuai harinya.
+  const series = session?.series ?? [];
+  const labelY = chartLabels(series.map((point) => Number(point.value)));
   // Label sumbu X
   const labelX = ["1 H", "1 B", "6 B", "1 T"];
-
-  // Mock titik grafik: 0 = paling atas, 100 = paling bawah
-  const titik = [
-    98, 82, 72, 80, 74, 86, 74, 64, 72, 50, 60, 46, 54, 36, 28, 40, 30, 16, 22, 10, 24, 12, 3,
-  ];
-  const path = titik
-    .map((y, i) => `${i === 0 ? "M" : "L"} ${(i / (titik.length - 1)) * 100},${y}`)
-    .join(" ");
+  const path = chartPath(series.map((point) => [point.day, Number(point.value)]));
 
   return (
     <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
@@ -76,8 +91,8 @@ export default function SimulasiSelesaiPage() {
             {rupiah(nilaiAkhir)}
           </p>
           <div className="mt-2 flex justify-center gap-14 text-[14px] font-semibold text-[#9B7FD6]">
-            <span style={bayanganTeks}>+{rupiah(keuntungan)}</span>
-            <span style={bayanganTeks}>+{returnPersen}%</span>
+            <span style={bayanganTeks}>{signOf(keuntungan)}{rupiah(Math.abs(keuntungan))}</span>
+            <span style={bayanganTeks}>{signOf(returnPersen)}{persen(returnPersen)}</span>
           </div>
         </div>
 
@@ -86,8 +101,8 @@ export default function SimulasiSelesaiPage() {
           <div className="flex h-[132px]">
             {/* Label sumbu Y */}
             <div className="flex w-[82px] shrink-0 translate-y-1.5 flex-col justify-between text-[13px] font-medium leading-none text-[#8A8D99]">
-              {labelY.map((l) => (
-                <span key={l} style={bayanganTeks}>
+              {labelY.map((l, i) => (
+                <span key={`${l}-${i}`} style={bayanganTeks}>
                   {l}
                 </span>
               ))}
@@ -96,8 +111,8 @@ export default function SimulasiSelesaiPage() {
             {/* Area grafik */}
             <div className="relative flex-1 border-l border-[#8A8D99]/70">
               <div className="absolute inset-0 flex flex-col justify-between">
-                {labelY.map((l) => (
-                  <div key={l} className="h-px bg-[#8A8D99]/70" />
+                {labelY.map((l, i) => (
+                  <div key={`${l}-${i}`} className="h-px bg-[#8A8D99]/70" />
                 ))}
               </div>
 
@@ -158,7 +173,7 @@ export default function SimulasiSelesaiPage() {
                 Keuntungan
               </dt>
               <dd className="font-bold text-[#9B7FD6]" style={bayanganTeks}>
-                +{rupiah(keuntungan)}
+                {signOf(keuntungan)}{rupiah(Math.abs(keuntungan))}
               </dd>
             </div>
             <div className="flex items-baseline justify-between">
@@ -166,7 +181,7 @@ export default function SimulasiSelesaiPage() {
                 Return
               </dt>
               <dd className="font-bold text-[#9B7FD6]" style={bayanganTeks}>
-                +{returnPersen}%
+                {signOf(returnPersen)}{persen(returnPersen)}
               </dd>
             </div>
           </dl>
@@ -183,5 +198,14 @@ export default function SimulasiSelesaiPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SimulasiSelesaiPage() {
+  return (
+    // useSearchParams wajib dibungkus Suspense di Next.js App Router
+    <Suspense fallback={null}>
+      <SimulasiSelesaiContent />
+    </Suspense>
   );
 }

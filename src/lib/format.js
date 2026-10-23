@@ -24,7 +24,11 @@ export const parseRupiahInput = (text) => Number(String(text).replace(/\D/g, "")
 
 const pad = (n) => String(n).padStart(2, "0");
 
-/** "YYYY-MM-DD" waktu lokal. Jangan pakai toISOString(): hasilnya UTC dan bisa mundur sehari. */
+/**
+ * "YYYY-MM-DD" dari komponen kalender Date lokal. Dipakai untuk aritmetika
+ * kalender (rentang periode, batas tanggal kalender). Jangan pakai toISOString():
+ * hasilnya UTC dan bisa mundur sehari.
+ */
 export const toLocalDateString = (date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
@@ -33,7 +37,56 @@ export const parseLocalDate = (text) => {
   return new Date(year, month - 1, day);
 };
 
-export const formatTime = (date) => `${pad(date.getHours())}.${pad(date.getMinutes())}`;
+/*
+ * BE mengelompokkan dan memfilter transaksi menurut tanggal WIB. Momen waktu
+ * (hari ini, waktu transaksi) dibaca dalam zona yang sama, supaya user di
+ * WITA/WIT atau dengan jam perangkat zona lain melihat tanggal yang sama
+ * dengan laporan BE.
+ */
+export const APP_TIME_ZONE = "Asia/Jakarta";
+const APP_UTC_OFFSET = "+07:00";
+
+const appZoneFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: APP_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Komponen tanggal & jam sebuah momen menurut WIB; month 0-based seperti Date. */
+export function appZoneParts(date) {
+  const parts = Object.fromEntries(
+    appZoneFormatter.formatToParts(date).map((part) => [part.type, part.value]),
+  );
+  const year = Number(parts.year);
+  const month = Number(parts.month) - 1;
+  const day = Number(parts.day);
+
+  return {
+    year,
+    month,
+    day,
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+    weekday: new Date(Date.UTC(year, month, day)).getUTCDay(),
+  };
+}
+
+/** "YYYY-MM-DD" sebuah momen menurut WIB. */
+export const toAppDateString = (date) => {
+  const { year, month, day } = appZoneParts(date);
+  return `${year}-${pad(month + 1)}-${pad(day)}`;
+};
+
+export const formatTime = (date) => {
+  const { hour, minute } = appZoneParts(date);
+  return `${pad(hour)}.${pad(minute)}`;
+};
 
 /** Pilihan kalender: { mode: "harian" | "mingguan" | "bulanan" | "tahunan", year, month, day }. */
 export const selectionFromDate = (date, mode = "bulanan") => ({
@@ -89,24 +142,32 @@ export function periodBadge(selection) {
   return { top: MONTH_NAMES[month], bottom: String(year) };
 }
 
-/** Tanggal pilihan user + jam sekarang, sebagai ISO UTC (BE menyimpan UTC). */
-export const toOccurredAt = ({ year, month, day }, now = new Date()) =>
-  new Date(year, month, day, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+/**
+ * Tanggal pilihan user (tanggal WIB) + jam WIB sekarang, sebagai ISO UTC
+ * (BE menyimpan UTC). Offset ditulis eksplisit, jadi hasilnya tidak bergantung
+ * pada zona waktu perangkat.
+ */
+export const toOccurredAt = ({ year, month, day }, now = new Date()) => {
+  const { hour, minute, second } = appZoneParts(now);
+  const local = `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}${APP_UTC_OFFSET}`;
+  return new Date(local).toISOString();
+};
 
-/** Kelompokkan transaksi (sudah urut terbaru dari BE) per tanggal lokal. */
+/** Kelompokkan transaksi (sudah urut terbaru dari BE) per tanggal WIB. */
 export function groupByDay(transactions) {
   const groups = [];
 
   for (const transaction of transactions) {
     const date = new Date(transaction.occurredAt);
-    const key = toLocalDateString(date);
+    const key = toAppDateString(date);
+    const parts = appZoneParts(date);
     let group = groups.at(-1);
 
     if (group?.key !== key) {
       group = {
         key,
-        date: `${MONTH_SHORT[date.getMonth()]} ${date.getDate()}`,
-        day: DAY_SHORT[date.getDay()],
+        date: `${MONTH_SHORT[parts.month]} ${parts.day}`,
+        day: DAY_SHORT[parts.weekday],
         items: [],
       };
       groups.push(group);

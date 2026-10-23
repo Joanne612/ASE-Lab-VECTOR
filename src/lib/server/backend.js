@@ -11,15 +11,35 @@ function backendUrl(path) {
   return `${baseUrl.replace(/\/$/, "")}${path}`;
 }
 
+/*
+ * IP klien asli. x-real-ip diisi platform (Vercel); kalau tidak ada, entri
+ * terakhir x-forwarded-for adalah yang ditambahkan proxy tepercaya, bukan yang
+ * bisa dikarang user.
+ */
+function clientIp(incoming) {
+  const realIp = incoming.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+  return incoming.get("x-forwarded-for")?.split(",").at(-1)?.trim() || undefined;
+}
+
 /** Request ke BE. `body` berupa string JSON yang sudah jadi. */
 export async function backendFetch(path, { method = "GET", body, accessToken } = {}) {
   const incoming = await headers();
   const requestHeaders = {};
 
-  // Diteruskan agar log dan rate limiter BE melihat klien asli, bukan server Next.
+  // Diteruskan untuk log BE.
   for (const name of FORWARDED_HEADERS) {
     const value = incoming.get(name);
     if (value) requestHeaders[name] = value;
+  }
+
+  // Semua request ke BE datang dari IP server ini. Tanpa IP klien + secret
+  // bersama, rate limiter BE menghitung seluruh user sebagai satu IP.
+  const sharedSecret = process.env.BFF_SHARED_SECRET;
+  const ip = clientIp(incoming);
+  if (sharedSecret && ip) {
+    requestHeaders["x-client-ip"] = ip;
+    requestHeaders["x-bff-key"] = sharedSecret;
   }
   if (body !== undefined) requestHeaders["Content-Type"] = "application/json";
   if (accessToken) requestHeaders.Authorization = `Bearer ${accessToken}`;

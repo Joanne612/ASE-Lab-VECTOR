@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import {
-  advanceSimulation,
+  advanceSimulationSafely,
   instrumentListPath,
   simulationSession,
   simulationSessions,
@@ -99,7 +99,7 @@ function SimulationContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId");
   const { data: instrumentsResponse } = useSWR(instrumentListPath());
-  const { data: sessionsResponse, error: sessionsError } = useSWR(sessionsKey);
+  const { data: sessionsResponse, mutate: refreshSessions } = useSWR(sessionsKey);
   const {
     data: sessionResponse,
     error: sessionError,
@@ -111,13 +111,18 @@ function SimulationContent() {
   const modalVirtual = Number(instrumentsResponse?.startingCash ?? 1_000_000);
   const instrument = session?.instrument ?? session?.instrumentDetails ?? {};
   const label = instrument.name ?? session?.instrumentName ?? session?.instrumentCode ?? "Investasi";
-  const invested = Number(session?.amount ?? session?.initialAmount ?? session?.investedAmount ?? 0);
-  const currentValue = Number(session?.currentValue ?? session?.currentAmount ?? session?.value ?? session?.totalValue ?? invested);
+  const startingCash = Number(session?.startingCash ?? modalVirtual);
+  const invested = Number(session?.investedAmount ?? 0);
+  const currentValue = Number(session?.currentValue ?? invested);
+  // Sisa kas virtual yang tidak ikut dibelikan; bagian dari total aset.
+  const cashLeft = Number(session?.cashLeft ?? 0);
   const change = currentValue - invested;
-  const finished = session?.status === "FINISHED" || session?.finished === true;
+  const finished = session?.status === "FINISHED";
   const checkpoints = Array.isArray(session?.checkpoints) ? session.checkpoints : [];
-  const checkpointIndex = Number(session?.checkpointIndex ?? session?.currentCheckpointIndex ?? 0);
+  // currentStep BE: 0 = baru membeli, 1..4 = checkpoint yang sudah dicapai.
+  const checkpointIndex = Number(session?.currentStep ?? 0) - 1;
   const totalCheckpoints = checkpoints.length || 4;
+  const nextLabel = session?.nextCheckpoint?.label ?? "1 Hari";
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -126,8 +131,10 @@ function SimulationContent() {
     setBusy(true);
     setErrorMessage("");
     try {
-      await advanceSimulation(sessionId);
-      await refreshSession();
+      // 409 (sudah dimajukan dari tab lain) cukup dimuat ulang.
+      await advanceSimulationSafely(sessionId);
+      // Daftar sesi ikut diperbarui supaya status dan nilainya tidak basi.
+      await Promise.all([refreshSession(), refreshSessions()]);
     } catch (error) {
       setErrorMessage(error.message);
     } finally {
@@ -146,9 +153,9 @@ function SimulationContent() {
             <p className="mt-2 text-[13px] text-[#8A8D99]">{finished ? "Simulasi selesai" : `Checkpoint ${checkpointIndex + 1} dari ${totalCheckpoints}`}</p>
             <Garis />
             <p className="mb-2 text-[14px] font-medium text-[#6A6E79]">{label}</p>
-            <BarisModal label="Modal virtual" nilai={rupiah(invested)} tebal={false} />
+            <BarisModal label="Modal virtual" nilai={rupiah(startingCash)} tebal={false} />
             <BarisModal label="Nilai investasi" nilai={rupiah(currentValue)} tebal={false} />
-            <BarisModal label="Total aset" nilai={rupiah(currentValue)} />
+            <BarisModal label="Total aset" nilai={rupiah(currentValue + cashLeft)} />
             <p className={`mt-1 text-right text-[13px] tabular-nums ${warnaUntung(change)}`}>
               {change >= 0 ? "+" : "-"}{rupiah(Math.abs(change))} ({invested ? `${((change / invested) * 100).toFixed(2)}%` : "0.00%"})
             </p>
@@ -165,7 +172,7 @@ function SimulationContent() {
             <div className="mt-4 flex justify-center gap-3">
               <PillButton variant="ghost" onClick={() => router.push("/simulasi")}>Kembali</PillButton>
               <PillButton onClick={lanjutCheckpoint} disabled={busy || finished}>
-                {busy ? "Memproses..." : finished ? "Selesai" : "Lanjut 1 Hari"}
+                {busy ? "Memproses..." : finished ? "Selesai" : `Lanjut ${nextLabel}`}
               </PillButton>
             </div>
           </Card>

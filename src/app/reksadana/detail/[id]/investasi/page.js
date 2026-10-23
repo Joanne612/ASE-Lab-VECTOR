@@ -64,7 +64,11 @@ export default function InvestasiReksaDanaPage() {
     : null;
   const totalInvestasi = estimate?.total ?? nominalAngka;
   const sisaSaldo = estimate?.remainingCash ?? saldoVirtual - totalInvestasi;
-  const bisaInvestasi = nominalAngka >= minimalInvestasi && nominalAngka <= saldoVirtual;
+  // Kode instrumen dari URL dipakai kalau detail produk belum termuat.
+  const kodeProduk = produk?.code ?? id;
+  const bisaInvestasi =
+    !isLoading && !instrumentError && Boolean(produk) &&
+    nominalAngka >= minimalInvestasi && nominalAngka <= saldoVirtual;
 
   const handleChange = (e) => {
     const digit = e.target.value.replace(/\D/g, "").replace(/^0+/, "");
@@ -79,7 +83,7 @@ export default function InvestasiReksaDanaPage() {
     setBusy(true);
     setErrorMessage("");
     try {
-      const result = await previewSimulation({ instrumentCode: produk.code, amount: nominalAngka });
+      const result = await previewSimulation({ instrumentCode: kodeProduk, amount: nominalAngka });
       setPreviewData(result);
       setTampilKonfirmasi(true);
     } catch (error) {
@@ -93,10 +97,10 @@ export default function InvestasiReksaDanaPage() {
     setBusy(true);
     setErrorMessage("");
     try {
-      const result = await createSimulation({ instrumentCode: produk.code, amount: nominalAngka });
+      const result = await createSimulation({ instrumentCode: kodeProduk, amount: nominalAngka });
       const sessionId = simulationSessionId(result);
       if (!sessionId) throw new Error("Sesi berhasil dibuat, tetapi ID sesi tidak ditemukan.");
-      router.push(`/reksadana/detail/${encodeURIComponent(id)}/investasi/sukses?nominal=${nominalAngka}`);
+      router.push(`/reksadana/detail/${encodeURIComponent(id)}/investasi/sukses?sessionId=${encodeURIComponent(sessionId)}`);
     } catch (error) {
       setErrorMessage(error.message);
     } finally {

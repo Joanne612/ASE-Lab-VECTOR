@@ -12,7 +12,8 @@ const TABS = [
 ];
 const ALL_MODES = TABS.map((t) => t.key);
 const DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-const YEARS = Array.from({ length: 11 }, (_, i) => 2020 + i);
+// 11 tahun (ukuran grid tetap): 8 tahun ke belakang sampai 2 tahun ke depan.
+const YEARS = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 8 + i);
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
 
 // Tanpa backdrop-blur: kalender berlatar putih opak, jadi blur tidak terlihat

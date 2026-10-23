@@ -14,15 +14,15 @@ import {
   selectionFromDate,
   toOccurredAt,
 } from "@/lib/format";
-import { createTransaction, useCategories, useInvalidate } from "@/lib/queries";
+import { createTransaction, useAccounts, useCategories, useInvalidate } from "@/lib/queries";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useToday } from "@/lib/use-today";
 
 const TABS = ["Pengeluaran", "Pemasukan", "Transfer"];
 const TAB_TYPE = { Pengeluaran: "EXPENSE", Pemasukan: "INCOME" };
 
-// TODO(Fase 8): ganti dengan GET /accounts setelah BE menyediakan akun.
-// Sampai saat itu pilihan akun hanya tampilan dan tidak ikut dikirim.
+// Tombol akun di form. Labelnya sama dengan nama akun bawaan BE, jadi id-nya
+// dicari dari GET /accounts berdasarkan nama.
 const ACCOUNTS = [
   { label: "Tunai", icon: "wallet" },
   { label: "Kartu Bank", icon: "card" },
@@ -207,6 +207,7 @@ export default function TambahTransaksiPage() {
   const invalidate = useInvalidate();
   const today = useToday();
   const hydrated = useHydrated();
+  const { data: accounts } = useAccounts();
 
   const [tab, setTab] = useState("Pengeluaran");
   const [categoryId, setCategoryId] = useState(null);
@@ -249,6 +250,8 @@ export default function TambahTransaksiPage() {
       await createTransaction({
         type: TAB_TYPE[tab],
         amount: parseRupiahInput(amount),
+        // Kalau daftar akun gagal dimuat, BE memakai akun default user.
+        accountId: accounts?.data?.find((a) => a.name === account)?.id,
         categoryId,
         note: note.trim() || undefined,
         occurredAt: toOccurredAt(date),

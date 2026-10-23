@@ -1,14 +1,14 @@
 import { useSyncExternalStore } from "react";
-import { toLocalDateString } from "./format";
+import { toAppDateString } from "./format";
 
 const subscribe = () => () => {};
-const getToday = () => toLocalDateString(new Date());
+const getToday = () => toAppDateString(new Date());
 const getServerToday = () => null;
 
 /**
- * Tanggal hari ini ("YYYY-MM-DD") menurut zona waktu browser.
+ * Tanggal hari ini ("YYYY-MM-DD") menurut WIB, zona yang sama dengan laporan BE.
  * Bernilai null saat render di server, supaya HTML server dan client tidak
- * berbeda (server bisa berada di zona waktu lain atau di-render saat build).
+ * berbeda (server bisa di-render saat build atau di hari yang berbeda).
  */
 export function useToday() {
   return useSyncExternalStore(subscribe, getToday, getServerToday);

@@ -17,6 +17,9 @@ function withQuery(path, params) {
 
 export const useMe = () => useSWR("/users/me");
 
+/** Akun milik user (Tunai, Kartu Bank, Tabungan, ...), dipakai untuk mengisi accountId transaksi. */
+export const useAccounts = () => useSWR("/accounts");
+
 /** Total & breakdown kategori. Header dan Statistik memakai key yang sama, jadi cukup satu request. */
 export const useSummary = (range) => useSWR(range ? withQuery("/transactions/summary", range) : null);
 

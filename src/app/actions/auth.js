@@ -5,6 +5,12 @@ import { backendFetch } from "@/lib/server/backend";
 import { clearSession, getSession, setSession } from "@/lib/server/session";
 
 const NETWORK_ERROR = "Tidak dapat menghubungi server. Coba lagi nanti.";
+const GMAIL_ONLY = "Gunakan alamat Gmail, contoh: nama@gmail.com.";
+
+// BE menyimpan email dalam huruf kecil; disamakan di sini supaya pesan dan
+// nilai yang dikembalikan ke form konsisten.
+const normalizeEmail = (value) => String(value ?? "").trim().toLowerCase();
+const isGmail = (email) => /^[^\s@]+@gmail\.com$/.test(email);
 
 async function authRequest(path, payload, messagesByStatus = {}) {
   let response;
@@ -26,7 +32,7 @@ async function authRequest(path, payload, messagesByStatus = {}) {
 }
 
 export async function login(_prevState, formData) {
-  const email = String(formData.get("email") ?? "").trim();
+  const email = normalizeEmail(formData.get("email"));
   const password = String(formData.get("password") ?? "");
   const values = { email };
 
@@ -48,10 +54,14 @@ export async function login(_prevState, formData) {
 export async function register(_prevState, formData) {
   const values = {
     username: String(formData.get("username") ?? "").trim(),
-    email: String(formData.get("email") ?? "").trim(),
+    email: normalizeEmail(formData.get("email")),
     dateOfBirth: String(formData.get("dateOfBirth") ?? ""),
   };
   const password = String(formData.get("password") ?? "");
+
+  if (!isGmail(values.email)) {
+    return { fieldErrors: { email: [GMAIL_ONLY] }, values };
+  }
 
   const result = await authRequest(
     "/auth/register",

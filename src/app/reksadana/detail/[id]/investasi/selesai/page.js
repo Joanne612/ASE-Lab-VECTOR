@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import useSWR from "swr";
+import { chartLabels, chartPath, sessionPath, signOf, simulationSession } from "@/lib/simulation";
 
 // Format angka
 const rupiah = (n) => `Rp ${Math.round(n).toLocaleString("id-ID")}`;
+const persen = (n) => `${Math.abs(n).toLocaleString("id-ID", { maximumFractionDigits: 2 })}%`;
 const bayanganTeks = { textShadow: "0 2px 4px rgba(120,100,160,0.2)" };
 
 function BackLink() {
@@ -29,27 +32,35 @@ function BackLink() {
 }
 
 function SimulasiSelesaiContent() {
-  const searchParams = useSearchParams();
-  const nominalParam = Number(searchParams.get("nominal"));
-  const modalAwal = Number.isFinite(nominalParam) && nominalParam > 0 ? nominalParam : 1000000;
-  const returnPersen = 18;
-  const periode = "1 Tahun";
-  const jenisReksaDana = "Pasar Uang";
+  const router = useRouter();
+  const { id } = useParams();
+  const sessionId = useSearchParams().get("sessionId");
+  const { data } = useSWR(sessionId ? sessionPath(sessionId) : null);
+  const session = simulationSession(data);
+  const result = session?.result;
 
-  const keuntungan = (modalAwal * returnPersen) / 100;
-  const nilaiAkhir = modalAwal + keuntungan;
+  // Hasil baru ada setelah checkpoint terakhir; sesi yang belum selesai
+  // dikembalikan ke halaman sukses untuk diselesaikan.
+  useEffect(() => {
+    const investasiHref = `/reksadana/detail/${encodeURIComponent(id ?? "")}/investasi`;
+    if (!sessionId) router.replace(investasiHref);
+    else if (session && session.status !== "FINISHED") {
+      router.replace(`${investasiHref}/sukses?sessionId=${encodeURIComponent(sessionId)}`);
+    }
+  }, [id, router, session, sessionId]);
 
-  // Label sumbu Y (atas ke bawah) & sumbu X
-  const labelY = ["Rp 650k", "Rp 600k", "Rp 550k", "Rp 500k", "Rp 450k"];
+  const modalAwal = Number(result?.investedAmount ?? session?.investedAmount ?? 0);
+  const nilaiAkhir = Number(result?.finalValue ?? session?.currentValue ?? 0);
+  const keuntungan = Number(result?.profit ?? 0);
+  const returnPersen = Number(result?.returnPct ?? 0);
+  const periode = result?.periodLabel ?? "1 Tahun";
+  const jenisReksaDana = result?.fundType ?? session?.instrument?.fundType ?? "-";
+
+  // Nilai investasi dari hari beli sampai 1 tahun, posisi x sesuai harinya.
+  const series = session?.series ?? [];
+  const labelY = chartLabels(series.map((point) => Number(point.value)));
   const labelX = ["1 H", "1 B", "6 B", "1 T"];
-
-  // Mock titik grafik: 0 = paling atas, 100 = paling bawah
-  const titik = [
-    98, 82, 72, 80, 74, 86, 74, 64, 72, 50, 60, 46, 54, 36, 28, 40, 30, 16, 22, 10, 24, 12, 3,
-  ];
-  const path = titik
-    .map((y, i) => `${i === 0 ? "M" : "L"} ${(i / (titik.length - 1)) * 100},${y}`)
-    .join(" ");
+  const path = chartPath(series.map((point) => [point.day, Number(point.value)]));
 
   return (
     <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
@@ -81,8 +92,8 @@ function SimulasiSelesaiContent() {
             {rupiah(nilaiAkhir)}
           </p>
           <div className="mt-2 flex justify-center gap-14 text-[14px] font-semibold text-[#9B7FD6]">
-            <span style={bayanganTeks}>+{rupiah(keuntungan)}</span>
-            <span style={bayanganTeks}>+{returnPersen}%</span>
+            <span style={bayanganTeks}>{signOf(keuntungan)}{rupiah(Math.abs(keuntungan))}</span>
+            <span style={bayanganTeks}>{signOf(returnPersen)}{persen(returnPersen)}</span>
           </div>
         </div>
 
@@ -91,8 +102,8 @@ function SimulasiSelesaiContent() {
           <div className="flex h-[132px]">
             {/* Label sumbu Y */}
             <div className="flex w-[82px] shrink-0 translate-y-1.5 flex-col justify-between text-[13px] font-medium leading-none text-[#8A8D99]">
-              {labelY.map((l) => (
-                <span key={l} style={bayanganTeks}>
+              {labelY.map((l, i) => (
+                <span key={`${l}-${i}`} style={bayanganTeks}>
                   {l}
                 </span>
               ))}
@@ -101,8 +112,8 @@ function SimulasiSelesaiContent() {
             {/* Area grafik */}
             <div className="relative flex-1 border-l border-[#8A8D99]/70">
               <div className="absolute inset-0 flex flex-col justify-between">
-                {labelY.map((l) => (
-                  <div key={l} className="h-px bg-[#8A8D99]/70" />
+                {labelY.map((l, i) => (
+                  <div key={`${l}-${i}`} className="h-px bg-[#8A8D99]/70" />
                 ))}
               </div>
 

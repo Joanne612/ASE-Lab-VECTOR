@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import { instrumentHistoryPath, instrumentPath, unwrapSimulationData } from "@/lib/simulation";
+import { formatRisk, instrumentHistoryPath, instrumentPath, unwrapSimulationData } from "@/lib/simulation";
 
 // Format angka
 const bayanganTeks = { textShadow: "0 2px 4px rgba(120,100,160,0.2)" };
@@ -11,7 +11,7 @@ const bayanganTeks = { textShadow: "0 2px 4px rgba(120,100,160,0.2)" };
 function BackLink() {
   return (
     <Link
-      href="/reksadana"
+      href="/simulasi"
       aria-label="Kembali"
       className="relative z-20 flex h-8 w-8 shrink-0 items-center justify-center text-[#6A6E79] transition hover:opacity-80 active:scale-95"
     >
@@ -63,7 +63,7 @@ export default function DetailReksaDanaPage() {
   }
 
   const info = [
-    { label: "Risiko", value: produk.riskLevel === "LOW" ? "Rendah" : produk.riskLevel },
+    { label: "Risiko", value: formatRisk(produk.riskLevel) },
     { label: "Jangka Waktu", value: produk.horizonText ?? "-" },
     { label: "Mulai dari", value: `Rp${Number(produk.minInvestment).toLocaleString("id-ID")}` },
   ];
