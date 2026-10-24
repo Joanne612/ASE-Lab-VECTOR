@@ -39,6 +39,7 @@ function BackLink() {
 export default function DetailSahamPage() {
   const { code } = useParams();
   const [tab, setTab] = useState("Bulan");
+  const [hoverIndex, setHoverIndex] = useState(null);
   const range = { Minggu: "WEEK", Bulan: "MONTH", Tahun: "YEAR" }[tab];
   const { data: detailResponse, error: detailError, isLoading: detailLoading } = useSWR(
     code ? instrumentPath(code) : null,
@@ -53,13 +54,36 @@ export default function DetailSahamPage() {
   const minimumPrice = prices.length ? Math.min(...prices) : 0;
   const maximumPrice = prices.length ? Math.max(...prices) : 0;
   const priceRange = maximumPrice - minimumPrice || 1;
-  const path = points
-    .map((point, index) => {
-      const x = points.length > 1 ? (index / (points.length - 1)) * 100 : 50;
-      const y = 95 - ((Number(point.price) - minimumPrice) / priceRange) * 90;
-      return `${index === 0 ? "M" : "L"} ${x},${y}`;
+  const coords = points.map((point, index) => ({
+    x: points.length > 1 ? (index / (points.length - 1)) * 100 : 50,
+    y: 92 - ((Number(point.price) - minimumPrice) / priceRange) * 84,
+  }));
+  // Kurva halus (Catmull-Rom -> Bezier) agar garis tidak patah-patah
+  const path = coords
+    .map((p, i) => {
+      if (i === 0) return `M ${p.x},${p.y}`;
+      const p0 = coords[i - 2] ?? coords[i - 1];
+      const p1 = coords[i - 1];
+      const p3 = coords[i + 1] ?? p;
+      const c1x = p1.x + (p.x - p0.x) / 6;
+      const c1y = p1.y + (p.y - p0.y) / 6;
+      const c2x = p.x - (p3.x - p1.x) / 6;
+      const c2y = p.y - (p3.y - p1.y) / 6;
+      return `C ${c1x},${c1y} ${c2x},${c2y} ${p.x},${p.y}`;
     })
     .join(" ");
+  const areaPath = coords.length ? `${path} L ${coords.at(-1).x},100 L ${coords[0].x},100 Z` : "";
+  // Warna garis mengikuti tren: hijau jika naik, merah jika turun
+  const trendUp = prices.length < 2 || prices.at(-1) >= prices[0];
+  const trendColor = trendUp ? "#2FA36B" : "#E0565B";
+  const activeIndex = hoverIndex ?? coords.length - 1;
+  const activePoint = coords[activeIndex];
+  const handleHover = (event) => {
+    if (coords.length < 2) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+    setHoverIndex(Math.round(ratio * (coords.length - 1)));
+  };
 
   if (detailLoading) {
     return <main className="px-6 py-12 text-center text-[#8A8D99]">Memuat detail saham...</main>;
@@ -117,28 +141,89 @@ export default function DetailSahamPage() {
         <div className="mt-6 rounded-2xl bg-white/20 p-4 border border-white/50">
           <div className="flex h-44 w-full">
             {/* Label Sumbu Y */}
-            <div className="flex flex-col justify-between text-[11px] font-medium text-[#8A8D99] pr-2">
-              <span>{rupiah(maximumPrice || Number(dataSaham.price))}</span>
-              <span>{rupiah(minimumPrice || Number(dataSaham.price))}</span>
+            <div className="relative w-16 shrink-0 text-[11px] font-medium text-[#8A8D99]">
+              {[0, 0.5, 1].map((t) => (
+                <span
+                  key={t}
+                  className="absolute right-2 -translate-y-1/2 whitespace-nowrap"
+                  style={{ top: `${8 + t * 84}%` }}
+                >
+                  {rupiah(prices.length ? maximumPrice - t * (maximumPrice - minimumPrice) : Number(dataSaham.price))}
+                </span>
+              ))}
             </div>
 
             {/* Area Grafik SVG */}
-            <div className="relative flex-1">
-              <div className="absolute inset-0 flex flex-col justify-between opacity-30">
-                <div className="border-b border-[#8A8D99]" />
-                <div className="border-b border-[#8A8D99]" />
-                <div className="border-b border-[#8A8D99]" />
-                <div className="border-b border-[#8A8D99]" />
-                <div className="border-b border-[#8A8D99]" />
-              </div>
+            <div
+              className="relative flex-1 cursor-crosshair"
+              onMouseMove={handleHover}
+              onTouchMove={(e) => handleHover(e.touches[0] ? { ...e, clientX: e.touches[0].clientX, currentTarget: e.currentTarget } : e)}
+              onMouseLeave={() => setHoverIndex(null)}
+              onTouchEnd={() => setHoverIndex(null)}
+            >
+              {[8, 50, 92].map((top) => (
+                <div
+                  key={top}
+                  className="absolute inset-x-0 border-b border-dashed border-[#8A8D99]/25"
+                  style={{ top: `${top}%` }}
+                />
+              ))}
 
-              <svg className="h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path d={path} fill="none" stroke="#9B7FD6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id={`grafikArea-${trendUp ? "naik" : "turun"}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={trendColor} stopOpacity="0.35" />
+                    <stop offset="100%" stopColor={trendColor} stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                {areaPath ? <path d={areaPath} fill={`url(#grafikArea-${trendUp ? "naik" : "turun"})`} stroke="none" /> : null}
+                <path
+                  d={path}
+                  fill="none"
+                  stroke={trendColor}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                {hoverIndex !== null && activePoint ? (
+                  <line
+                    x1={activePoint.x}
+                    x2={activePoint.x}
+                    y1="0"
+                    y2="100"
+                    stroke={trendColor}
+                    strokeOpacity="0.4"
+                    strokeDasharray="3 3"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ) : null}
               </svg>
+
+              {activePoint ? (
+                <>
+                  <span
+                    className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
+                    style={{ left: `${activePoint.x}%`, top: `${activePoint.y}%`, backgroundColor: trendColor, boxShadow: `0 0 0 4px ${trendColor}40` }}
+                  />
+                  {hoverIndex !== null ? (
+                    <div
+                      className="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-white/90 px-2 py-1 text-center text-[11px] shadow-md"
+                      style={{
+                        left: `${Math.min(Math.max(activePoint.x, 12), 88)}%`,
+                        top: `${activePoint.y > 40 ? Math.max(activePoint.y - 30, 0) : activePoint.y + 6}%`,
+                      }}
+                    >
+                      <p className="font-bold text-[#757885]">{rupiah(points[activeIndex].price)}</p>
+                      <p className="text-[#A1A4B0]">{points[activeIndex].date}</p>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
             </div>
           </div>
 
-          <div className="mt-3 flex justify-around pl-10 text-[11px] font-medium text-[#8A8D99]">
+          <div className="mt-3 flex justify-between pl-16 text-[11px] font-medium text-[#8A8D99]">
             <span>{points[0]?.date ?? "-"}</span>
             <span>{points.at(-1)?.date ?? "-"}</span>
           </div>
