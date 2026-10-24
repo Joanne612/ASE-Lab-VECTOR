@@ -4,6 +4,16 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { register } from "@/app/actions/auth";
 import FieldError from "@/components/FieldError";
+import {
+  DesktopBackgroundLayer,
+  DesktopBrand,
+  DesktopCardGlass,
+  DesktopEyeIcon,
+  DesktopIllustrationLayer,
+  FIELD_SHADOW,
+  TEXT_GLOW,
+} from "@/components/auth/AuthDesktop";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { useToday } from "@/lib/use-today";
 
 const PANEL_TOP = "363px";
@@ -12,7 +22,7 @@ const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[6
 /* LAYER 1 — BACKGROUND */
 function BackgroundLayer() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8]">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8] lg:hidden">
       {/* fade out ke bawah */}
       <div
         className="absolute left-0 right-0 top-0 h-[400px]"
@@ -50,7 +60,7 @@ function BackgroundLayer() {
 /* LAYER 2 — PANEL PUTIH */
 function PanelLayer() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 lg:hidden">
       <div className={`relative ${COLUMN}`}>
         <div
           style={{ top: PANEL_TOP }}
@@ -69,185 +79,213 @@ function PanelLayer() {
 }
 
 /* LAYER 3 — TULISAN & TOMBOL */
-const INPUT_CLASS =
-  "h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4";
+const INPUT_CLASS = `h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4 lg:px-[11px] lg:font-medium ${FIELD_SHADOW} ${TEXT_GLOW}`;
+
+/* Ikon sosial versi desktop (SVG dari Figma); mobile memakai SVG inline di bawah. */
+const DESKTOP_SOCIAL_ICONS = ["google", "twitter", "instagram", "linkedin"];
 
 function TextLayer() {
   const [showPassword, setShowPassword] = useState(false);
   // Register berjalan di Server Action; kalau berhasil user langsung masuk ke /homepage.
   const [state, formAction, pending] = useActionState(register, undefined);
   const today = useToday();
+  // Field desktop terlalu sempit untuk placeholder lengkap; batas 8 karakter tetap dicek minLength.
+  const isDesktop = useMediaQuery("(min-width: 64rem)");
   const errors = state?.fieldErrors;
 
   return (
-    <div className="relative z-20 min-h-screen">
-      <div className={`${COLUMN} flex flex-col px-4 sm:px-6 md:px-8`}>
+    <div className="relative z-20 min-h-screen lg:flex lg:items-center lg:justify-center lg:px-8 lg:py-6">
+      <DesktopIllustrationLayer />
+
+      {/* Desktop: kartu kaca dua kolom (branding | form) */}
+      <div className={`${COLUMN} flex flex-col px-4 sm:px-6 md:px-8 lg:relative lg:grid lg:h-auto lg:min-h-[603px] lg:max-w-[1114px] lg:grid-cols-[514fr_600fr] lg:px-0`}>
+        <DesktopCardGlass />
+
         {/* Heading */}
-        <header style={{ height: PANEL_TOP }} className="flex shrink-0 flex-col justify-end pb-9 text-right">
-          <h1 className="text-[26px] font-bold leading-tight tracking-[-0.5px] text-[#6A6E79] sm:text-[30px]">
+        <header
+          style={{ "--panel-top": PANEL_TOP }}
+          className="flex h-(--panel-top) shrink-0 flex-col justify-end pb-9 text-right lg:relative lg:z-[2] lg:h-auto lg:justify-start lg:pb-0 lg:pl-[calc(87/514*100%)] lg:pr-6 lg:pt-[38px] lg:text-left"
+        >
+          <DesktopBrand className="ml-[78px] w-[180px]" />
+          <h1 className={`text-[26px] font-bold leading-tight tracking-[-0.5px] text-[#6A6E79] sm:text-[30px] lg:mt-[38.5px] lg:max-w-[10.667em] lg:text-[clamp(29px,2.8125vw,36px)] lg:leading-normal lg:tracking-normal ${TEXT_GLOW}`}>
             Impian besar, mulai dari sini.
           </h1>
-          <p className="mt-1 text-[18px] leading-tight text-[#6A6E79] sm:text-[19px]">
+          <p className={`mt-1 text-[18px] leading-tight text-[#6A6E79] sm:text-[19px] lg:mt-[2px] lg:text-[20px] lg:font-medium lg:leading-normal ${TEXT_GLOW}`}>
             Atur uangmu, capai tujuanmu!
           </p>
         </header>
 
         {/* Card */}
-        <section className="pb-10 pt-7">
-          <h2 className="text-[23px] font-bold tracking-[-0.3px] text-[#686B78] sm:text-[25px]">
+        <section className="pb-10 pt-7 lg:relative lg:z-[2] lg:px-6 lg:pt-[30px] lg:text-center">
+          <h2 className={`text-[23px] font-bold tracking-[-0.3px] text-[#686B78] sm:text-[25px] lg:text-[32px] lg:font-semibold lg:leading-normal lg:tracking-normal lg:text-[#6A6E79] ${TEXT_GLOW}`}>
             Yuk, mulai perjalananmu!
           </h2>
+          <p className={`hidden lg:mt-[6px] lg:block lg:text-[24px] lg:font-medium lg:leading-normal lg:text-[#6A6E79] ${TEXT_GLOW}`}>
+            Buat akun dan mulai atur uangmu
+          </p>
 
-          {/* Form */}
-          <form className="mt-5 space-y-3" action={formAction}>
-            <div>
-              <input
-                type="text"
-                name="username"
-                autoComplete="username"
-                defaultValue={state?.values?.username}
-                placeholder="Nama panggilan"
-                aria-label="Nama panggilan"
-                aria-invalid={Boolean(errors?.username)}
-                aria-describedby="register-username-hint"
-                required
-                minLength={3}
-                maxLength={30}
-                pattern="[A-Za-z0-9_]+"
-                title="3–30 karakter: huruf, angka, atau garis bawah (_), tanpa spasi"
-                className={INPUT_CLASS}
-              />
-              {errors?.username ? (
-                <FieldError id="register-username-hint" messages={errors.username} />
-              ) : (
-                <p id="register-username-hint" className="mt-1 px-1 text-[13px] text-[#6A6E79]/70">
-                  3–30 karakter: huruf, angka, atau _ (tanpa spasi)
+          {/* Desktop: form | "Atau" | ikon sosial dalam satu baris */}
+          <div className="lg:mt-[42px] lg:flex lg:justify-center">
+            {/* Form */}
+            <form className="mt-5 space-y-3 lg:mt-0 lg:w-[257px] lg:shrink-0 lg:space-y-[11px] lg:text-left" action={formAction}>
+              <div>
+                <input
+                  type="text"
+                  name="username"
+                  autoComplete="username"
+                  defaultValue={state?.values?.username}
+                  placeholder="Nama panggilan"
+                  aria-label="Nama panggilan"
+                  aria-invalid={Boolean(errors?.username)}
+                  aria-describedby="register-username-hint"
+                  required
+                  minLength={3}
+                  maxLength={30}
+                  pattern="[A-Za-z0-9_]+"
+                  title="3–30 karakter: huruf, angka, atau garis bawah (_), tanpa spasi"
+                  className={INPUT_CLASS}
+                />
+                {errors?.username ? (
+                  <FieldError id="register-username-hint" messages={errors.username} />
+                ) : (
+                  <p id="register-username-hint" className="mt-1 px-1 text-[13px] text-[#6A6E79]/70 lg:sr-only">
+                    3–30 karakter: huruf, angka, atau _ (tanpa spasi)
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  defaultValue={state?.values?.email}
+                  placeholder="Email"
+                  aria-label="Email"
+                  aria-invalid={Boolean(errors?.email)}
+                  aria-describedby="register-email-error"
+                  required
+                  // Pendaftaran hanya untuk Gmail; dicek ulang di Server Action dan BE.
+                  pattern="[^@\s]+@[Gg][Mm][Aa][Ii][Ll]\.[Cc][Oo][Mm]"
+                  title="Gunakan alamat Gmail, contoh: nama@gmail.com"
+                  className={INPUT_CLASS}
+                />
+                <FieldError id="register-email-error" messages={errors?.email} />
+              </div>
+
+              {/* Kata sandi */}
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  autoComplete="new-password"
+                  placeholder={isDesktop ? "Kata sandi" : "Kata sandi (min. 8 karakter)"}
+                  aria-label="Kata sandi"
+                  aria-invalid={Boolean(errors?.password)}
+                  aria-describedby="register-password-error"
+                  required
+                  minLength={8}
+                  maxLength={128}
+                  className={`${INPUT_CLASS} pr-12 lg:pr-[60px]`}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#B6B6C0] transition hover:bg-gray-100 lg:right-[26px]">
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5 lg:hidden">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.99 0 1.953-.138 2.86-.396M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.774 3.162 10.066 7.5a10.523 10.523 0 01-4.293 5.142M6.228 6.228L3 3m3.228 3.228l3.37 3.37m0 0a3 3 0 104.243 4.243m-4.243-4.243L3 3m3.228 3.228l3.37 3.37m6.598 6.598L21 21" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"/>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5 lg:hidden">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
+                  <DesktopEyeIcon passwordVisible={showPassword} />
+                </button>
+              </div>
+              <FieldError id="register-password-error" messages={errors?.password} />
+
+              <div>
+                <input
+                  type="date"
+                  name="dateOfBirth"
+                  defaultValue={state?.values?.dateOfBirth}
+                  // Tanggal lokal; toISOString() memakai UTC dan bisa bergeser sehari.
+                  max={today ?? undefined}
+                  aria-label="Tanggal lahir"
+                  aria-invalid={Boolean(errors?.dateOfBirth)}
+                  aria-describedby="register-dob-error"
+                  required
+                  className={INPUT_CLASS}
+                />
+                <FieldError id="register-dob-error" messages={errors?.dateOfBirth} />
+              </div>
+
+              {state?.message ? (
+                <p role="alert" className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {state.message}
                 </p>
-              )}
-            </div>
-
-            <div>
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                defaultValue={state?.values?.email}
-                placeholder="Email"
-                aria-label="Email"
-                aria-invalid={Boolean(errors?.email)}
-                aria-describedby="register-email-error"
-                required
-                // Pendaftaran hanya untuk Gmail; dicek ulang di Server Action dan BE.
-                pattern="[^@\s]+@[Gg][Mm][Aa][Ii][Ll]\.[Cc][Oo][Mm]"
-                title="Gunakan alamat Gmail, contoh: nama@gmail.com"
-                className={INPUT_CLASS}
-              />
-              <FieldError id="register-email-error" messages={errors?.email} />
-            </div>
-
-            {/* Kata sandi */}
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                autoComplete="new-password"
-                placeholder="Kata sandi (min. 8 karakter)"
-                aria-label="Kata sandi"
-                aria-invalid={Boolean(errors?.password)}
-                aria-describedby="register-password-error"
-                required
-                minLength={8}
-                maxLength={128}
-                className={`${INPUT_CLASS} pr-12`}
-              />
+              ) : null}
 
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#B6B6C0] transition hover:bg-gray-100">
-                {showPassword ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.99 0 1.953-.138 2.86-.396M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.774 3.162 10.066 7.5a10.523 10.523 0 01-4.293 5.142M6.228 6.228L3 3m3.228 3.228l3.37 3.37m0 0a3 3 0 104.243 4.243m-4.243-4.243L3 3m3.228 3.228l3.37 3.37m6.598 6.598L21 21" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"/>
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                )}
+                type="submit"
+                disabled={pending}
+                className={`mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 sm:h-[53px] lg:mt-[21px] lg:h-[49px] lg:border-white/40 lg:bg-[rgba(122,83,177,0.7)] lg:text-[20px] lg:backdrop-blur-[10px] ${FIELD_SHADOW} ${TEXT_GLOW}`}
+              >
+                {pending ? "Memproses..." : "Buat akun"}
               </button>
-            </div>
-            <FieldError id="register-password-error" messages={errors?.password} />
+            </form>
 
-            <div>
-              <input
-                type="date"
-                name="dateOfBirth"
-                defaultValue={state?.values?.dateOfBirth}
-                // Tanggal lokal; toISOString() memakai UTC dan bisa bergeser sehari.
-                max={today ?? undefined}
-                aria-label="Tanggal lahir"
-                aria-invalid={Boolean(errors?.dateOfBirth)}
-                aria-describedby="register-dob-error"
-                required
-                className={INPUT_CLASS}
-              />
-              <FieldError id="register-dob-error" messages={errors?.dateOfBirth} />
+            <div className="my-6 flex items-center gap-4 lg:my-0 lg:ml-[28px] lg:w-[55px] lg:flex-col lg:gap-0">
+              <div className="h-px flex-1 bg-[#C9C9CF] lg:h-auto lg:w-px lg:flex-[119] lg:bg-[#6A6E79]/50" />
+              <span className={`text-[18px] text-[#9B9BA5] lg:mb-2 lg:mt-1 lg:text-[20px] lg:font-medium lg:leading-normal lg:text-[#6A6E79]/50 ${TEXT_GLOW}`}>Atau</span>
+              <div className="h-px flex-1 bg-[#C9C9CF] lg:h-auto lg:w-px lg:flex-[149] lg:bg-[#6A6E79]/50" />
             </div>
 
-            {state?.message ? (
-              <p role="alert" className="rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-                {state.message}
-              </p>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={pending}
-              className="mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 sm:h-[53px]"
-            >
-              {pending ? "Memproses..." : "Buat akun"}
-            </button>
-          </form>
-
-          <div className="my-6 flex items-center gap-4">
-            <div className="h-px flex-1 bg-[#C9C9CF]" />
-            <span className="text-[18px] text-[#9B9BA5]">Atau</span>
-            <div className="h-px flex-1 bg-[#C9C9CF]" />
+            {/* Social login */}
+            <div className="flex items-center justify-center gap-9 sm:gap-12 lg:ml-[65px] lg:mt-[55px] lg:flex-col lg:justify-start lg:gap-[29px] lg:self-start">
+              <svg viewBox="0 0 24 24" fill="#9697A0" className="h-6 w-6 lg:hidden">
+                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
+              </svg>
+              <svg viewBox="0 0 24 24" fill="#9697A0" className="h-6 w-6 lg:hidden">
+                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
+              </svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9697A0"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6 lg:hidden"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="0.6" fill="#9697A0" />
+              </svg>
+              <svg viewBox="0 0 24 24" fill="#9697A0" className="h-6 w-6 lg:hidden">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z" />
+              </svg>
+              {DESKTOP_SOCIAL_ICONS.map((name) => (
+                <span
+                  key={name}
+                  aria-hidden="true"
+                  className="hidden size-6 bg-no-repeat lg:block"
+                  style={{ backgroundImage: `url(/auth-desktop-${name}.svg)` }}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* Social login */}
-          <div className="flex items-center justify-center gap-9 sm:gap-12">
-            <svg viewBox="0 0 24 24" fill="#9697A0" className="h-6 w-6">
-              <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-            </svg>
-            <svg viewBox="0 0 24 24" fill="#9697A0" className="h-6 w-6">
-              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
-            </svg>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#9697A0"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="5" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="17.5" cy="6.5" r="0.6" fill="#9697A0" />
-            </svg>
-            <svg viewBox="0 0 24 24" fill="#9697A0" className="h-6 w-6">
-              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z" />
-            </svg>
-          </div>
-
-          <div className="mt-6 text-center">
-            <p className="text-[16px] text-[#9B9BA5]">Sudah punya akun?</p>
-            <Link href="/" className="mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition">
-              Masuk sekarang
+          <div className="mt-6 text-center lg:mt-[42px]">
+            <p className={`text-[16px] text-[#9B9BA5] lg:font-medium lg:text-[#6A6E79]/50 ${TEXT_GLOW}`}>Sudah punya akun?</p>
+            <Link href="/" className={`mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition lg:font-semibold lg:text-[#7A53B1]/70 lg:hover:font-bold lg:hover:text-[#7A53B1]/70 lg:hover:drop-shadow-[0_4px_4px_rgba(0,0,0,0.15)] ${TEXT_GLOW}`}>
+              Masuk<span className="lg:hidden"> sekarang</span>
             </Link>
           </div>
         </section>
@@ -258,8 +296,9 @@ function TextLayer() {
 
 export default function RegisterPage() {
   return (
-    <main className="relative min-h-screen w-full overflow-hidden bg-gradient-to-r from-[#E1DCE3] to-[#F1E9E8]">
+    <main className="relative min-h-screen w-full overflow-hidden bg-gradient-to-r from-[#E1DCE3] to-[#F1E9E8] lg:font-(family-name:--font-poppins)">
       <BackgroundLayer />
+      <DesktopBackgroundLayer />
       <PanelLayer />
       <TextLayer />
     </main>

@@ -4,6 +4,15 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { login } from "@/app/actions/auth";
 import FieldError from "@/components/FieldError";
+import {
+  DesktopBackgroundLayer,
+  DesktopBrand,
+  DesktopCardGlass,
+  DesktopEyeIcon,
+  DesktopIllustrationLayer,
+  FIELD_SHADOW,
+  TEXT_GLOW,
+} from "@/components/auth/AuthDesktop";
 
 const PANEL_TOP = "363px";
 const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[640px]";
@@ -11,7 +20,7 @@ const COLUMN = "mx-auto h-full w-full max-w-[480px] sm:max-w-[560px] md:max-w-[6
 /* LAYER 1 — BACKGROUND */
 function BackgroundLayer() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8]">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8] lg:hidden">
       {/* fade out ke bawah */}
       <div
         className="absolute left-0 right-0 top-0 h-[400px]"
@@ -49,7 +58,7 @@ function BackgroundLayer() {
 /* LAYER 2 — PANEL PUTIH */
 function PanelLayer() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 lg:hidden">
       <div className={`relative ${COLUMN}`}>
         <div
           style={{ top: PANEL_TOP }}
@@ -75,26 +84,38 @@ function TextLayer() {
   const [state, formAction, pending] = useActionState(login, undefined);
 
   return (
-    <div className="relative z-20 min-h-screen">
-      <div className={`${COLUMN} flex flex-col px-4 sm:px-6 md:px-8`}>
+    <div className="relative z-20 min-h-screen lg:flex lg:items-center lg:justify-center lg:px-8 lg:py-6">
+      <DesktopIllustrationLayer />
+
+      {/* Desktop: kartu kaca dua kolom (branding | form) */}
+      <div className={`${COLUMN} flex flex-col px-4 sm:px-6 md:px-8 lg:relative lg:grid lg:h-auto lg:min-h-[603px] lg:max-w-[1114px] lg:grid-cols-[514fr_600fr] lg:px-0`}>
+        <DesktopCardGlass />
+
         {/* Heading */}
-        <header style={{ height: PANEL_TOP }} className="flex shrink-0 flex-col justify-end pb-9 text-right">
-          <h1 className="text-[26px] font-bold leading-tight tracking-[-0.5px] text-[#686B78] sm:text-[30px]">
+        <header
+          style={{ "--panel-top": PANEL_TOP }}
+          className="flex h-(--panel-top) shrink-0 flex-col justify-end pb-9 text-right lg:relative lg:z-[2] lg:h-auto lg:justify-start lg:pb-0 lg:pl-[calc(87/514*100%)] lg:pr-6 lg:pt-[31px] lg:text-left"
+        >
+          <DesktopBrand className="ml-[83px] w-[200px]" />
+          <h1 className={`text-[26px] font-bold leading-tight tracking-[-0.5px] text-[#686B78] sm:text-[30px] lg:mt-[27px] lg:text-[clamp(32px,3.125vw,40px)] lg:leading-normal lg:tracking-normal lg:text-[#6A6E79] ${TEXT_GLOW}`}>
             Uangmu, ceritamu.
           </h1>
-          <p className="mt-1 text-[18px] leading-tight text-[#747783] sm:text-[19px]">
+          <p className={`mt-1 text-[18px] leading-tight text-[#747783] sm:text-[19px] lg:mt-[3px] lg:max-w-[272px] lg:text-[20px] lg:font-medium lg:leading-normal lg:text-[#6A6E79] ${TEXT_GLOW}`}>
             Yuk, lanjutkan langkah mu hari ini!
           </p>
         </header>
 
         {/* Card */}
-        <section className="pb-10 pt-7">
-          <h2 className="text-[23px] font-bold tracking-[-0.3px] text-[#686B78] sm:text-[25px]">
+        <section className="pb-10 pt-7 lg:relative lg:z-[2] lg:px-6 lg:pt-[87px] lg:text-center">
+          <h2 className={`text-[23px] font-bold tracking-[-0.3px] text-[#686B78] sm:text-[25px] lg:text-[32px] lg:font-semibold lg:leading-normal lg:tracking-normal lg:text-[#6A6E79] ${TEXT_GLOW}`}>
             Selamat datang kembali!
           </h2>
+          <p className={`hidden lg:mt-[9px] lg:block lg:text-[24px] lg:font-medium lg:leading-normal lg:text-[#6A6E79] ${TEXT_GLOW}`}>
+            Mari, lanjutkan perjalananmu!
+          </p>
 
           {/* Form */}
-          <form className="mt-4 space-y-3" action={formAction}>
+          <form className="mt-4 space-y-3 lg:mx-auto lg:mt-[22px] lg:max-w-[366px] lg:space-y-[18px] lg:text-left" action={formAction}>
             <div>
               <input
                 type="email"
@@ -106,7 +127,7 @@ function TextLayer() {
                 aria-invalid={Boolean(state?.fieldErrors?.email)}
                 aria-describedby="login-email-error"
                 required
-                className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
+                className={`h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4 lg:px-[14px] lg:font-medium ${FIELD_SHADOW} ${TEXT_GLOW}`}
               />
               <FieldError id="login-email-error" messages={state?.fieldErrors?.email} />
             </div>
@@ -119,26 +140,27 @@ function TextLayer() {
                 placeholder="Kata sandi"
                 aria-label="Kata sandi"
                 required
-                className="h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 pr-12 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4"
+                className={`h-[49px] w-full rounded-[10px] border border-white/40 bg-[#DDE6F5]/15 px-3 pr-12 text-[16px] text-[#6A6E79] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)] outline-none backdrop-blur-[10px] placeholder:text-[#6A6E79]/50 sm:px-4 lg:pl-[14px] lg:pr-[60px] lg:font-medium ${FIELD_SHADOW} ${TEXT_GLOW}`}
               />
 
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#B6B6C0] transition hover:bg-gray-100"
+                className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#B6B6C0] transition hover:bg-gray-100 lg:right-[26px]"
               >
                 {showPassword ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5 lg:hidden">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.99 0 1.953-.138 2.86-.396M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.774 3.162 10.066 7.5a10.523 10.523 0 01-4.293 5.142M6.228 6.228L3 3m3.228 3.228l3.37 3.37m0 0a3 3 0 104.243 4.243m-4.243-4.243L3 3m3.228 3.228l3.37 3.37m6.598 6.598L21 21" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"/>
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.7" stroke="currentColor" className="h-5 w-5 lg:hidden">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 )}
+                <DesktopEyeIcon passwordVisible={showPassword} />
               </button>
             </div>
 
@@ -151,20 +173,20 @@ function TextLayer() {
             <button
               type="submit"
               disabled={pending}
-              className="mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 sm:h-[53px]"
+              className={`mt-5 h-[49px] w-full rounded-full border border-white/30 bg-[#9D86C4] text-[18px] font-medium text-white shadow-[0_8px_20px_rgba(110,90,160,0.25),inset_0_0_12px_rgba(255,255,255,0.35)] [text-shadow:0_0_8px_rgba(255,255,255,0.6)] transition hover:brightness-75 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 sm:h-[53px] lg:mt-[29px] lg:h-[49px] lg:border-white/40 lg:bg-[rgba(122,83,177,0.7)] lg:text-[20px] lg:backdrop-blur-[10px] ${FIELD_SHADOW} ${TEXT_GLOW}`}
             >
               {pending ? "Memproses..." : "Masuk"}
             </button>
           </form>
 
-          <div className="my-6 flex items-center gap-4">
+          <div className="my-6 flex items-center gap-4 lg:hidden">
             <div className="h-px flex-1 bg-[#C9C9CF]" />
             <span className="text-[18px] text-[#9B9BA5]">Atau</span>
             <div className="h-px flex-1 bg-[#C9C9CF]" />
           </div>
 
           {/* Social login */}
-          <div className="flex items-center justify-center gap-9 sm:gap-12">
+          <div className="flex items-center justify-center gap-9 sm:gap-12 lg:hidden">
             <svg viewBox="0 0 24 24" fill="#9697A0" className="h-6 w-6">
               <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
             </svg>
@@ -189,9 +211,9 @@ function TextLayer() {
             </svg>
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-[16px] text-[#9B9BA5]">Belum punya akun?</p>
-            <Link href="/register" className="mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition">
+          <div className="mt-6 text-center lg:mt-[18px]">
+            <p className={`text-[16px] text-[#9B9BA5] lg:font-medium lg:text-[#6A6E79]/50 ${TEXT_GLOW}`}>Belum punya akun?</p>
+            <Link href="/register" className={`mt-1 inline-block text-[16px] font-medium text-[#C7A3E9] hover:text-[#7A53B1] transition lg:font-semibold lg:text-[#7A53B1]/70 lg:hover:font-bold lg:hover:text-[#7A53B1]/70 lg:hover:drop-shadow-[0_4px_4px_rgba(0,0,0,0.15)] ${TEXT_GLOW}`}>
               Daftar sekarang
             </Link>
           </div>
@@ -203,9 +225,10 @@ function TextLayer() {
 
 export default function LoginPage() {
   return (
-    <main className="relative min-h-screen w-full overflow-hidden bg-[#F8F6FA]">
-      <BackgroundLayer /> 
-      <PanelLayer /> 
+    <main className="relative min-h-screen w-full overflow-hidden bg-[#F8F6FA] lg:font-(family-name:--font-poppins)">
+      <BackgroundLayer />
+      <DesktopBackgroundLayer />
+      <PanelLayer />
       <TextLayer />
     </main>
   );
