@@ -11,6 +11,7 @@ import {
   simulationSessions,
   sessionPath,
 } from "@/lib/simulation";
+import { BOX, CARD, PurpleButton, TEXT } from "@/components/simulasi/desktop-ui";
 
 const sessionsKey = "/simulation/sessions?page=1&limit=10";
 const angka = (value) => Math.round(Number(value) || 0).toLocaleString("id-ID");
@@ -94,6 +95,24 @@ function BarisModal({ label, nilai, tebal = true }) {
   );
 }
 
+/* Kartu pilihan simulasi versi desktop (Figma 519:5770, 516×425). */
+function DesktopPilihan({ title, desc, poin, href }) {
+  return (
+    <section className={`relative h-[425px] px-[32px] pt-[22px] ${CARD}`}>
+      <h2 className={`text-[30px] font-semibold leading-normal ${TEXT}`}>{title}</h2>
+      <p className={`mt-[12px] min-h-[60px] text-[20px] leading-snug ${TEXT}`}>{desc}</p>
+      <ul className={`-mx-[5px] mt-[10px] flex h-[169px] flex-col justify-center gap-[15px] px-[20px] text-[20px] font-medium ${BOX} ${TEXT}`}>
+        {poin.map((p) => (
+          <li key={p}>{p}</li>
+        ))}
+      </ul>
+      <PurpleButton href={href} className="absolute bottom-[25px] left-1/2 h-[54px] w-[214px] -translate-x-1/2 text-[20px]">
+        Mulai Simulasi
+      </PurpleButton>
+    </section>
+  );
+}
+
 function SimulationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -144,7 +163,7 @@ function SimulationContent() {
 
   if (sessionId) {
     return (
-      <GlassWrap className="mb-6 mt-[20px]">
+      <GlassWrap className="mb-6 mt-[20px] lg:mx-auto lg:max-w-[640px]">
         <div className="mb-1 pl-1"><BackLink /></div>
         {sessionLoading ? <p className="py-8 text-center text-[14px] text-[#8A8D99]">Memuat sesi...</p> : null}
         {sessionError ? <p role="alert" className="py-5 text-center text-[13px] text-[#F27A70]">{sessionError.message}</p> : null}
@@ -183,7 +202,22 @@ function SimulationContent() {
 
   return (
     <>
-      <GlassWrap className="mb-[30px] mt-[20px]">
+      <div className="hidden grid-cols-2 gap-[75px] px-[104px] lg:-mt-[19px] lg:grid">
+        <DesktopPilihan
+          title="Saham"
+          desc="Pelajari cara kerja investasi saham melalui simulasi sederhana"
+          poin={["Memahami resiko dan peluang", "Belajar membaca pergerakan harga", "Coba strategi investasi sendiri"]}
+          href="/saham"
+        />
+        <DesktopPilihan
+          title="Reksa dana"
+          desc="Kamu bisa memilih saham perusahaan tertentu dan melihat bagaimana nilai berubah"
+          poin={["Pahami cara kerja reksa dana", "Lihat perkembangan nilai investasi", "Coba berbagai jenis reksa dana"]}
+          href="/reksadana"
+        />
+      </div>
+
+      <GlassWrap className="mb-[30px] mt-[20px] lg:hidden">
         <div className="mb-1 pl-1"><BackLink /></div>
         <Card icon={<IconSaham />} title="Saham">
           <p className="pl-[48px] pr-2 pt-1 text-[14px] leading-[20px] text-[#8A8D99]">

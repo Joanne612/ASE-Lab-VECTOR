@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
+import DesktopRunning from "@/components/simulasi/DesktopRunning";
 import { advanceSimulationSafely, sessionPath, simulationSession } from "@/lib/simulation";
 
 // Label checkpoint sebelum data sesi termuat; sama dengan CHECKPOINTS di BE.
@@ -111,7 +112,21 @@ function InvestasiBerjalanContent() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
+    <>
+    <DesktopRunning
+      saldoAwal={saldoAwal}
+      investasi={investasi}
+      periode={periode}
+      aktif={aktif}
+      onPilih={setPilihan}
+      nilaiSekarang={nilaiSekarang}
+      persenAktif={persenAktif}
+      errorMessage={errorMessage}
+      onLanjut={lanjutkan}
+      disabled={!session}
+      busy={busy}
+    />
+    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px] lg:hidden">
       <header className="mb-2 pl-2">
         <BackLink />
       </header>
@@ -228,6 +243,7 @@ function InvestasiBerjalanContent() {
         </div>
       </div>
     </main>
+    </>
   );
 }
 

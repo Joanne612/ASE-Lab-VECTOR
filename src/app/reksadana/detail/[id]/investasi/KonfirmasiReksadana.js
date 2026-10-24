@@ -18,7 +18,7 @@ export default function KonfirmasiReksaDana({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[#6A6E79]/20 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#6A6E79]/20 backdrop-blur-sm lg:hidden"
       onClick={onClose}
     >
       <div

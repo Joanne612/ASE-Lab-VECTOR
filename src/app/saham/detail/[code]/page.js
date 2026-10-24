@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
+import DesktopLineChart from "@/components/simulasi/DesktopLineChart";
+import { ACCENT_TEXT, BOX_SM, CARD, DesktopStatus, PurpleButton, SOFT_TEXT, TEXT } from "@/components/simulasi/desktop-ui";
 import {
   formatRisk,
   instrumentHistoryPath,
@@ -86,14 +88,33 @@ export default function DetailSahamPage() {
   };
 
   if (detailLoading) {
-    return <main className="px-6 py-12 text-center text-[#8A8D99]">Memuat detail saham...</main>;
+    return (
+      <>
+        <DesktopStatus>Memuat detail saham...</DesktopStatus>
+        <main className="px-6 py-12 text-center text-[#8A8D99] lg:hidden">Memuat detail saham...</main>
+      </>
+    );
   }
   if (detailError || !dataSaham) {
-    return <main role="alert" className="px-6 py-12 text-center text-[#B94A48]">{detailError?.message ?? "Saham tidak ditemukan."}</main>;
+    return (
+      <>
+        <DesktopStatus role="alert">{detailError?.message ?? "Saham tidak ditemukan."}</DesktopStatus>
+        <main role="alert" className="px-6 py-12 text-center text-[#B94A48] lg:hidden">{detailError?.message ?? "Saham tidak ditemukan."}</main>
+      </>
+    );
   }
 
   return (
-    <main className="relative min-h-screen px-[13px] pb-8 pt-[20px]">
+    <>
+    <DetailSahamDesktop
+      saham={dataSaham}
+      tab={tab}
+      onTab={setTab}
+      prices={prices}
+      points={points}
+      historyError={historyError}
+    />
+    <main className="relative min-h-screen px-[13px] pb-8 pt-[20px] lg:hidden">
       <header className="mb-2 pl-2">
         <BackLink />
       </header>
@@ -265,5 +286,87 @@ export default function DetailSahamPage() {
 
       </div>
     </main>
+    </>
+  );
+}
+/* Label sumbu X: 4 tanggal tersebar merata dari riwayat harga. */
+function sebaranTanggal(points) {
+  if (points.length === 0) return ["-"];
+  const count = Math.min(4, points.length);
+  return Array.from({ length: count }, (_, i) => points[Math.round((i * (points.length - 1)) / Math.max(count - 1, 1))].date);
+}
+
+/* Detail saham versi desktop (Figma 519:5841): info di kiri, periode dan grafik di kanan. */
+function DetailSahamDesktop({ saham, tab, onTab, prices, points, historyError }) {
+  const max = prices.length ? Math.max(...prices) : Number(saham.price);
+  const min = prices.length ? Math.min(...prices) : Number(saham.price);
+  const yLabels = Array.from({ length: 5 }, (_, i) => rupiah(max - ((max - min) * i) / 4));
+
+  return (
+    <div className="hidden justify-center px-4 lg:flex">
+      <div className={`relative grid h-[430px] w-[967px] grid-cols-[400px_1fr] gap-x-[50px] px-[36px] pb-[80px] pt-[26px] ${CARD}`}>
+        <section>
+          <h1 className={`text-[32px] font-semibold leading-tight ${TEXT}`}>{saham.code}</h1>
+          <p className={`text-[20px] font-medium leading-normal ${SOFT_TEXT}`}>{saham.name}</p>
+          <p className="mt-[18px] flex items-baseline gap-[10px]">
+            <span className={`text-[28px] font-bold leading-none ${SOFT_TEXT}`}>{rupiah(saham.price)}</span>
+            <span className={`text-[20px] font-medium ${TEXT}`}>/lembar</span>
+          </p>
+          <p className={`mt-[10px] text-[16px] font-semibold ${ACCENT_TEXT}`}>{persen(saham.changePct)} hari ini</p>
+
+          <div className="mt-[14px] grid grid-cols-2 gap-[30px]">
+            {[
+              ["Risiko", formatRisk(saham.riskLevel)],
+              ["Potensi Keuntungan", formatRisk(saham.returnPotential)],
+            ].map(([label, value]) => (
+              <div key={label} className={`h-[66px] px-[9px] pt-[8px] ${BOX_SM}`}>
+                <p className={`text-[13px] font-semibold ${ACCENT_TEXT}`}>{label}</p>
+                <p className={`mt-[8px] text-right text-[20px] font-semibold leading-none ${TEXT}`}>{value}</p>
+              </div>
+            ))}
+          </div>
+
+          <h2 className={`mt-[12px] text-[16px] font-bold ${TEXT}`}>Tentang saham</h2>
+          <p className={`mt-[4px] line-clamp-3 text-[14px] leading-snug ${SOFT_TEXT}`}>{saham.description}</p>
+        </section>
+
+        <section>
+          <div
+            role="radiogroup"
+            aria-label="Periode grafik"
+            className={`ml-auto grid h-[59px] w-[318px] grid-cols-3 gap-[3px] rounded-[15px] border-[3px] border-white bg-[rgba(221,230,245,0.3)] p-[3px] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2)]`}
+          >
+            {["Bulan", "Minggu", "Tahun"].map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="radio"
+                aria-checked={tab === t}
+                onClick={() => onTab(t)}
+                className={`rounded-[10px] text-[20px] ${TEXT} transition ${tab === t ? "border border-white bg-white/70 shadow-[0_4px_12px_rgba(0,0,0,0.08)]" : "hover:bg-white/40"}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <DesktopLineChart
+            className="mt-[18px]"
+            points={points.map((p, i) => [i, Number(p.price)])}
+            yLabels={yLabels}
+            xLabels={sebaranTanggal(points)}
+            label={`Grafik harga ${saham.code}`}
+          />
+          {historyError ? <p role="alert" className="mt-2 text-[14px] text-[#B94A48]">{historyError.message}</p> : null}
+        </section>
+
+        <PurpleButton
+          href={`/saham/detail/${encodeURIComponent(saham.code)}/investasi`}
+          className="absolute bottom-[11px] left-1/2 h-[61px] w-[295px] -translate-x-1/2 text-[20px]"
+        >
+          Investasi Sekarang
+        </PurpleButton>
+      </div>
+    </div>
   );
 }

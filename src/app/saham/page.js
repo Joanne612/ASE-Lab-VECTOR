@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import useSWR from "swr";
+import { ACCENT_TEXT, CARD, DesktopStatus, PurpleButton, SOFT_TEXT, TEXT } from "@/components/simulasi/desktop-ui";
 import { instrumentListPath, simulationInstruments, formatRisk } from "@/lib/simulation";
 
 // Format angka
@@ -66,12 +67,48 @@ function KartuSaham({ s }) {
   );
 }
 
+/* Kartu saham versi desktop (Figma 519:5838, 367×311). */
+function KartuSahamDesktop({ s }) {
+  return (
+    <article className={`flex h-[311px] flex-col px-[35px] pb-[42px] pt-[20px] ${CARD}`}>
+      <h2 className={`text-[30px] font-semibold leading-normal ${TEXT}`}>{s.code}</h2>
+      <p className={`truncate text-[20px] font-medium leading-normal ${SOFT_TEXT}`}>{s.name}</p>
+      <div className="-mx-[19px] mt-[10px] h-px bg-white shadow-[0_1px_2px_rgba(154,168,189,0.3)]" />
+      <p className={`mt-[11px] text-[24px] font-bold leading-normal ${SOFT_TEXT}`}>{rupiah(s.price)}</p>
+      <div className={`mt-[10px] flex items-start justify-between text-[16px] font-semibold ${ACCENT_TEXT}`}>
+        <span className="tabular-nums">{persen(s.changePct)} hari ini</span>
+        <span>Risiko {formatRisk(s.riskLevel)}</span>
+      </div>
+      <PurpleButton
+        href={`/saham/detail/${encodeURIComponent(s.code)}`}
+        className="ml-auto mt-auto h-[45px] w-[154px] text-[20px]"
+      >
+        Lihat Detail
+      </PurpleButton>
+    </article>
+  );
+}
+
 export default function PilihSahamPage() {
   const { data, error, isLoading } = useSWR(instrumentListPath("STOCK"));
   const saham = simulationInstruments(data);
 
   return (
-    <main className="min-h-screen px-[13px] pb-8 pt-[20px]">
+    <>
+    {isLoading ? <DesktopStatus>Memuat saham...</DesktopStatus> : null}
+    {error ? <DesktopStatus role="alert">{error.message}</DesktopStatus> : null}
+    {!isLoading && !error && saham.length === 0 ? <DesktopStatus>Belum ada saham simulasi.</DesktopStatus> : null}
+    {saham.length > 0 ? (
+      <ul className="hidden grid-cols-3 gap-[31px] px-[58px] pt-[15px] lg:grid">
+        {saham.map((s) => (
+          <li key={s.code}>
+            <KartuSahamDesktop s={s} />
+          </li>
+        ))}
+      </ul>
+    ) : null}
+
+    <main className="min-h-screen px-[13px] pb-8 pt-[20px] lg:hidden">
       <header className="relative z-10 mb-[14px] flex items-center gap-[10px] pl-[6px]">
         <BackLink />
         <h1 className="text-[22px] font-semibold text-[#8A8D99]" style={bayanganTeks}>
@@ -94,5 +131,6 @@ export default function PilihSahamPage() {
         </ul>
       ) : null}
     </main>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { Suspense, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { chartLabels, chartPath, sessionPath, signOf, simulationSession } from "@/lib/simulation";
+import DesktopResult from "@/components/simulasi/DesktopResult";
 
 // Format angka
 const rupiah = (n) => `Rp ${Math.round(n).toLocaleString("id-ID")}`;
@@ -63,7 +64,20 @@ function SimulasiSelesaiContent() {
   const path = chartPath(series.map((point) => [point.day, Number(point.value)]));
 
   return (
-    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
+    <>
+    <DesktopResult
+      nilaiAkhir={nilaiAkhir}
+      keuntungan={keuntungan}
+      returnPersen={returnPersen}
+      series={series}
+      doneHref="/simulasi"
+      rows={[
+        ["Modal awal", rupiah(modalAwal)],
+        ["Periode Investasi", periode],
+        ["Jenis Reksa Dana", jenisReksaDana],
+      ]}
+    />
+    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px] lg:hidden">
       <header className="mb-2 pl-2">
         <BackLink />
       </header>
@@ -191,6 +205,7 @@ function SimulasiSelesaiContent() {
         </div>
       </div>
     </main>
+    </>
   );
 }
 

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import KonfirmasiReksaDana from "./KonfirmasiReksadana";
+import DesktopConfirmDialog, { ConfirmRow } from "@/components/simulasi/DesktopConfirmDialog";
+import DesktopInvestForm, { SummaryTitle } from "@/components/simulasi/DesktopInvestForm";
+import { DesktopStatus } from "@/components/simulasi/desktop-ui";
 import {
   createSimulation,
   instrumentListPath,
@@ -108,11 +111,62 @@ export default function InvestasiReksaDanaPage() {
     }
   };
 
-  if (isLoading) return <main className="px-6 py-12 text-center text-[#8A8D99]">Memuat reksa dana...</main>;
-  if (instrumentError || !produk) return <main role="alert" className="px-6 py-12 text-center text-[#B94A48]">{instrumentError?.message ?? "Produk tidak ditemukan."}</main>;
+  if (isLoading) {
+    return (
+      <>
+        <DesktopStatus>Memuat reksa dana...</DesktopStatus>
+        <main className="px-6 py-12 text-center text-[#8A8D99] lg:hidden">Memuat reksa dana...</main>
+      </>
+    );
+  }
+  if (instrumentError || !produk) {
+    return (
+      <>
+        <DesktopStatus role="alert">{instrumentError?.message ?? "Produk tidak ditemukan."}</DesktopStatus>
+        <main role="alert" className="px-6 py-12 text-center text-[#B94A48] lg:hidden">{instrumentError?.message ?? "Produk tidak ditemukan."}</main>
+      </>
+    );
+  }
 
   return (
-    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
+    <>
+    <DesktopInvestForm
+      saldoVirtual={saldoVirtual}
+      nominal={nominal}
+      onNominal={setNominal}
+      errorMessage={errorMessage}
+      onSubmit={handleInvestasi}
+      disabled={!bisaInvestasi}
+      busy={busy}
+      note="*Ini adalah uang virtual dan tidak menggunakan uang sungguhan"
+      summary={
+        <div className="min-h-[72px]">
+          <SummaryTitle>Sisa saldo</SummaryTitle>
+          {nominal ? (
+            <p className={`mt-[6px] text-[32px] font-semibold ${sisaSaldo < 0 ? "text-[#D46B6B]" : "text-[#6A6E79]/70"}`}>
+              {sisaSaldo < 0 ? `-${rupiah(Math.abs(sisaSaldo))}` : rupiah(sisaSaldo)}
+            </p>
+          ) : null}
+        </div>
+      }
+    />
+    <DesktopConfirmDialog
+      open={tampilKonfirmasi}
+      title="Konfirmasi Investasi"
+      subtitle={`Kamu akan melakukan simulasi investasi ${namaProduk}`}
+      onClose={() => setTampilKonfirmasi(false)}
+      onConfirm={handleKonfirmasi}
+      submitting={busy}
+    >
+      <p className="border-b-2 border-[#6A6E79]/30 pb-[8px] text-[24px] font-semibold text-[#6A6E79]/70">{namaProduk}</p>
+      <div className="mt-[12px] space-y-[8px]">
+        <ConfirmRow label="Jumlah investasi" value={rupiah(nominalAngka)} />
+        <ConfirmRow label="Saldo awal" value={rupiah(saldoVirtual)} />
+        <ConfirmRow label="Total investasi" value={rupiah(totalInvestasi)} />
+      </div>
+    </DesktopConfirmDialog>
+
+    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px] lg:hidden">
       <header className="mb-2 pl-2">
         <BackLink />
       </header>
@@ -230,5 +284,6 @@ export default function InvestasiReksaDanaPage() {
         submitting={busy}
       />
     </main>
+    </>
   );
 }

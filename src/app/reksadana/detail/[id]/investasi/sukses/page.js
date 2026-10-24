@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
+import { ACCENT_TEXT, CARD, PurpleButton, TEXT, ValueBox } from "@/components/simulasi/desktop-ui";
 import { finishSimulation, sessionPath, simulationSession } from "@/lib/simulation";
 
 const rupiah = (n) => `Rp ${Math.round(n).toLocaleString("id-ID")}`;
@@ -45,7 +46,30 @@ function SuksesContent() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
+    <>
+    {/* Desktop: gaya kartu simulasi (layar ini tidak ada di Figma). */}
+    <div className="hidden justify-center px-4 lg:flex">
+      <div className={`relative flex h-[430px] w-[760px] flex-col items-center px-[60px] pt-[34px] text-center ${CARD}`}>
+        <div className="flex size-[84px] items-center justify-center rounded-full bg-[rgba(122,83,177,0.15)] text-[#7A53B1]/80">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <h1 className={`mt-[16px] text-[32px] font-semibold ${ACCENT_TEXT}`}>Investasi Berhasil!</h1>
+        <p className={`mt-[4px] text-[20px] ${TEXT}`}>Simulasi investasi reksa dana kamu berhasil dikonfirmasi.</p>
+        <ValueBox label="Jumlah investasi" value={rupiah(nominal)} className="mt-[22px] w-[459px] text-left" />
+        {errorMessage ? <p role="alert" className="mt-2 text-[15px] text-[#B94A48]">{errorMessage}</p> : null}
+        <PurpleButton
+          onClick={lihatHasil}
+          disabled={!session || busy}
+          className="absolute bottom-[11px] left-1/2 h-[61px] w-[295px] -translate-x-1/2 text-[20px]"
+        >
+          {busy ? "Memproses..." : "Lihat Hasil Simulasi"}
+        </PurpleButton>
+      </div>
+    </div>
+
+    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px] lg:hidden">
       <div className="relative flex flex-1 flex-col items-center justify-center rounded-[32px] border border-white/70 bg-white/30 px-6 pb-8 pt-6 text-center shadow-[0_8px_24px_rgba(120,100,160,0.12),inset_0_1px_3px_rgba(255,255,255,0.7)] backdrop-blur-xl">
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#9B7FD6]/15 text-[#9B7FD6]">
           <svg
@@ -101,6 +125,7 @@ function SuksesContent() {
         </button>
       </div>
     </main>
+    </>
   );
 }
 

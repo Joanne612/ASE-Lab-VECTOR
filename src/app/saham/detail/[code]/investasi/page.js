@@ -5,6 +5,8 @@ import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import KonfirmasiInvestasi from "./KonfirmasiInvestasi";
+import DesktopConfirmDialog, { ConfirmRow } from "@/components/simulasi/DesktopConfirmDialog";
+import DesktopInvestForm, { EstimateRow, SummaryTitle } from "@/components/simulasi/DesktopInvestForm";
 import {
   createSimulation,
   instrumentListPath,
@@ -105,7 +107,47 @@ export default function InvestasiPage() {
   };
 
   return (
-    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
+    <>
+    <DesktopInvestForm
+      saldoVirtual={saldoVirtual}
+      nominal={nominal}
+      onNominal={setNominal}
+      errorMessage={errorMessage}
+      onSubmit={handlePreview}
+      disabled={!bisaInvestasi}
+      busy={busy}
+      loading={isLoading}
+      summary={
+        <>
+          <SummaryTitle>Estimasi pembelian</SummaryTitle>
+          <dl className="mt-[14px] space-y-[12px]">
+            <EstimateRow label="Harga saham" value={rupiah(hargaSaham)} unit="/ lembar" />
+            <EstimateRow label="Jumlah saham" value={jumlahLembar.toLocaleString("id-ID")} unit="lembar" />
+            <EstimateRow label="Sisa saldo" value={rupiah(sisaSaldo)} />
+          </dl>
+        </>
+      }
+    />
+    <DesktopConfirmDialog
+      open={tampilKonfirmasi}
+      title="Konfirmasi Investasi"
+      subtitle="Kamu akan melakukan simulasi pembelian"
+      onClose={() => setTampilKonfirmasi(false)}
+      onConfirm={handleKonfirmasi}
+      submitting={busy}
+    >
+      <p className="text-[26px] font-semibold leading-tight text-[#6A6E79]/70">{kodeSaham}</p>
+      <p className="text-[20px] text-[#6A6E79]/70">{namaSaham}</p>
+      <hr className="my-[12px] border-[#6A6E79]/30" />
+      <div className="space-y-[8px]">
+        <ConfirmRow label="Jumlah saham" value={`${jumlahLembar.toLocaleString("id-ID")} lembar`} />
+        <ConfirmRow label="Total investasi" value={rupiah(totalInvestasi)} />
+      </div>
+      <hr className="my-[12px] border-[#6A6E79]/30" />
+      <ConfirmRow label="Saldo setelah investasi" value={rupiah(sisaSaldo)} />
+    </DesktopConfirmDialog>
+
+    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px] lg:hidden">
       <header className="mb-2 pl-2">
         <BackLink />
       </header>
@@ -227,5 +269,6 @@ export default function InvestasiPage() {
         submitting={busy}
       />
     </main>
+    </>
   );
 }

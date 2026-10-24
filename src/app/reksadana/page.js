@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
+import DesktopLineChart from "@/components/simulasi/DesktopLineChart";
+import { ACCENT_TEXT, BOX_SM, CARD, DesktopStatus, PurpleButton, SOFT_TEXT, TEXT } from "@/components/simulasi/desktop-ui";
 import { formatRisk, instrumentHistoryPath, instrumentPath, unwrapSimulationData } from "@/lib/simulation";
 
 // Format angka
@@ -56,10 +58,20 @@ export default function DetailReksaDanaPage() {
   const hrefInvestasi = `/reksadana/detail/${encodeURIComponent(produk?.code ?? "RDPU")}/investasi`;
 
   if (isLoading) {
-    return <main className="px-6 py-12 text-center text-[#8A8D99]">Memuat reksa dana...</main>;
+    return (
+      <>
+        <DesktopStatus>Memuat reksa dana...</DesktopStatus>
+        <main className="px-6 py-12 text-center text-[#8A8D99] lg:hidden">Memuat reksa dana...</main>
+      </>
+    );
   }
   if (error || !produk) {
-    return <main role="alert" className="px-6 py-12 text-center text-[#B94A48]">{error?.message ?? "Produk tidak ditemukan."}</main>;
+    return (
+      <>
+        <DesktopStatus role="alert">{error?.message ?? "Produk tidak ditemukan."}</DesktopStatus>
+        <main role="alert" className="px-6 py-12 text-center text-[#B94A48] lg:hidden">{error?.message ?? "Produk tidak ditemukan."}</main>
+      </>
+    );
   }
 
   const info = [
@@ -69,7 +81,68 @@ export default function DetailReksaDanaPage() {
   ];
 
   return (
-    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px]">
+    <>
+    {/* Desktop (Figma 525:4947): info di kiri, grafik perkembangan di kanan. */}
+    <div className="hidden justify-center px-4 lg:flex">
+      <div className={`relative grid h-[430px] w-[967px] grid-cols-[400px_1fr] gap-x-[50px] px-[36px] pb-[80px] pt-[26px] ${CARD}`}>
+        <section>
+          <h1 className={`text-[32px] font-semibold leading-tight ${TEXT}`}>{produk.name}</h1>
+          <p className="mt-[18px] flex items-baseline gap-[10px]">
+            <span className={`text-[28px] font-bold leading-none ${SOFT_TEXT}`}>{`Rp${Math.round(Number(produk.price)).toLocaleString("id-ID")}`}</span>
+            <span className={`text-[20px] font-medium ${TEXT}`}>/unit</span>
+          </p>
+          {produk.changePct !== undefined ? (
+            <p className={`mt-[10px] text-[16px] font-semibold ${ACCENT_TEXT}`}>
+              {Number(produk.changePct) >= 0 ? "+" : "-"} {Math.abs(Number(produk.changePct)).toFixed(1).replace(".", ",")}% hari ini
+            </p>
+          ) : null}
+          <div className="mt-[14px] grid grid-cols-3 gap-[12px]">
+            {info.map((i) => (
+              <div key={i.label} className={`h-[66px] px-[8px] pt-[8px] text-center ${BOX_SM}`}>
+                <p className={`whitespace-nowrap text-[13px] font-semibold ${ACCENT_TEXT}`}>{i.label}</p>
+                <p className={`mt-[6px] whitespace-nowrap text-[18px] font-semibold ${TEXT}`}>{i.value}</p>
+              </div>
+            ))}
+          </div>
+          <h2 className={`mt-[12px] text-[16px] font-bold ${TEXT}`}>Tentang reksa dana</h2>
+          <p className={`mt-[4px] line-clamp-3 text-[14px] leading-snug ${SOFT_TEXT}`}>{produk.description}</p>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between">
+            <h2 className={`text-[20px] font-semibold ${TEXT}`}>Perkembangan Simulasi</h2>
+            <div role="radiogroup" aria-label="Periode grafik" className="grid h-[48px] w-[240px] grid-cols-3 gap-[3px] rounded-[15px] border-[3px] border-white bg-[rgba(221,230,245,0.3)] p-[3px]">
+              {["Minggu", "Bulan", "Tahun"].map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  role="radio"
+                  aria-checked={tab === item}
+                  onClick={() => setTab(item)}
+                  className={`rounded-[10px] text-[16px] ${TEXT} ${tab === item ? "border border-white bg-white/70" : "hover:bg-white/40"}`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <DesktopLineChart
+            className="mt-[26px]"
+            points={points.map((p, i) => [i, Number(p.price)])}
+            yLabels={labelY}
+            xLabels={sebaranTanggal(points)}
+            label={`Grafik nilai ${produk.name}`}
+          />
+          {historyError ? <p role="alert" className="mt-2 text-[14px] text-[#B94A48]">{historyError.message}</p> : null}
+        </section>
+
+        <PurpleButton href={hrefInvestasi} className="absolute bottom-[11px] left-1/2 h-[61px] w-[295px] -translate-x-1/2 text-[20px]">
+          Investasi Sekarang
+        </PurpleButton>
+      </div>
+    </div>
+
+    <main className="relative flex min-h-screen flex-col px-[13px] pb-10 pt-[20px] lg:hidden">
       <header className="mb-2 pl-2">
         <BackLink />
       </header>
@@ -195,5 +268,12 @@ export default function DetailReksaDanaPage() {
         </div>
       </div>
     </main>
+    </>
   );
+}
+/* Label sumbu X desktop: 4 tanggal tersebar merata dari riwayat. */
+function sebaranTanggal(points) {
+  if (points.length === 0) return ["-"];
+  const count = Math.min(4, points.length);
+  return Array.from({ length: count }, (_, i) => points[Math.round((i * (points.length - 1)) / Math.max(count - 1, 1))].date);
 }
