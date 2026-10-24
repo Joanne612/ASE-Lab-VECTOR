@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+/*
+ * Scrollbar tipis bergaya kaca untuk daftar yang di-scroll di dalam kartu
+ * (statistik, riwayat): track transparan, thumb putih menyatu dengan kartu.
+ */
+@utility scrollbar-glass {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.85) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 0 0 1px rgba(154, 168, 189, 0.25);
+  }
+}

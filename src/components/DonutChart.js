@@ -43,7 +43,8 @@ export default function DonutChart({ items, label, className = "" }) {
       </svg>
 
       {/* efek cekung */}
-      <div className="absolute inset-[30px] rounded-full bg-[#F6F3F3] shadow-[inset_0_4px_10px_rgba(120,100,160,0.2),inset_0_-3px_6px_rgba(255,255,255,0.9)]" />
+      {/* inset 30px pada 170px, dalam persen supaya tetap pas kalau ukuran donat diubah lewat className. */}
+      <div className="absolute inset-[17.647%] rounded-full bg-[#F6F3F3] shadow-[inset_0_4px_10px_rgba(120,100,160,0.2),inset_0_-3px_6px_rgba(255,255,255,0.9)]" />
     </div>
   );
 }

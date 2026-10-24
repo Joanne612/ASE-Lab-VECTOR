@@ -63,7 +63,7 @@ function TotalValue({ value, loading, failed, align = "left" }) {
   );
 }
 
-function LogoutButton() {
+export function LogoutButton() {
   const { pending } = useFormStatus();
 
   return (
@@ -114,7 +114,7 @@ export default function Header() {
   const badge = selection ? periodBadge(selection) : { top: "", bottom: "" };
 
   return (
-    <header className="relative mt-6 h-[250px] w-full">
+    <header className="relative mt-6 h-[250px] w-full lg:hidden">
       <div aria-hidden="true" className="absolute inset-0 bg-white/40 backdrop-blur-xl" style={headerMaskStyle} />
 
       <svg

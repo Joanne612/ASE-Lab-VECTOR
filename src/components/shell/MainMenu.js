@@ -15,7 +15,7 @@ export default function MainMenu() {
   const pathname = usePathname();
 
   return (
-    <section className="mt-12">
+    <section className="mt-12 lg:hidden">
       <h2 className="px-5 text-[18px] font-bold text-[#6A6E79]">Menu utama</h2>
 
       <div
