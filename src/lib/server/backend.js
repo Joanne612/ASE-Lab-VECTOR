@@ -52,6 +52,29 @@ export async function backendFetch(path, { method = "GET", body, accessToken } =
   });
 }
 
+// Cold start BE (scale-to-zero di Azure) bisa lebih dari 30 detik.
+const WAKE_UP_TIMEOUT_MS = 90_000;
+
+/**
+ * Membangunkan BE dari scale-to-zero. /health ada di root BE, bukan di bawah
+ * prefix API milik ASE_BACKEND_URL, dan tidak kena rate limiter maupun database.
+ * Mengembalikan false kalau BE tidak dapat dihubungi; tidak pernah melempar.
+ */
+export async function wakeBackend() {
+  const baseUrl = process.env.ASE_BACKEND_URL;
+  if (!baseUrl) return false;
+
+  try {
+    const response = await fetch(new URL("/health", baseUrl), {
+      cache: "no-store",
+      signal: AbortSignal.timeout(WAKE_UP_TIMEOUT_MS),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 /*
  * BE merotasi refresh token dan mencabut SEMUA sesi user kalau refresh token
  * lama dipakai ulang. Halaman memanggil beberapa endpoint sekaligus, jadi tanpa
