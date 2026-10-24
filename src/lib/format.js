@@ -143,12 +143,14 @@ export function periodBadge(selection) {
 }
 
 /**
- * Tanggal pilihan user (tanggal WIB) + jam WIB sekarang, sebagai ISO UTC
- * (BE menyimpan UTC). Offset ditulis eksplisit, jadi hasilnya tidak bergantung
- * pada zona waktu perangkat.
+ * Tanggal pilihan user (tanggal WIB) + jam pilihan user, atau jam WIB sekarang
+ * kalau jam tidak dipilih, sebagai ISO UTC (BE menyimpan UTC). Offset ditulis
+ * eksplisit, jadi hasilnya tidak bergantung pada zona waktu perangkat.
  */
-export const toOccurredAt = ({ year, month, day }, now = new Date()) => {
-  const { hour, minute, second } = appZoneParts(now);
+export const toOccurredAt = (selection, now = new Date()) => {
+  const { year, month, day } = selection;
+  const { hour, minute, second } =
+    selection.hour === undefined ? appZoneParts(now) : { hour: selection.hour, minute: selection.minute, second: 0 };
   const local = `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}${APP_UTC_OFFSET}`;
   return new Date(local).toISOString();
 };

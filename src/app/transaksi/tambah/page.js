@@ -1,33 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CalendarBadge from "@/components/CalendarBadge";
 import CalendarPicker from "@/components/CalendarPicker";
 import Icon from "@/components/Icon";
-import {
-  formatDigitsInput,
-  parseLocalDate,
-  parseRupiahInput,
-  periodBadge,
-  selectionFromDate,
-  toOccurredAt,
-} from "@/lib/format";
-import { createTransaction, useAccounts, useCategories, useInvalidate } from "@/lib/queries";
-import { useHydrated } from "@/lib/use-hydrated";
-import { useToday } from "@/lib/use-today";
-
-const TABS = ["Pengeluaran", "Pemasukan", "Transfer"];
-const TAB_TYPE = { Pengeluaran: "EXPENSE", Pemasukan: "INCOME" };
-
-// Tombol akun di form. Labelnya sama dengan nama akun bawaan BE, jadi id-nya
-// dicari dari GET /accounts berdasarkan nama.
-const ACCOUNTS = [
-  { label: "Tunai", icon: "wallet" },
-  { label: "Kartu Bank", icon: "card" },
-  { label: "Tabungan", icon: "piggy" },
-];
+import DesktopTransactionModal from "@/components/transaksi/DesktopTransactionModal";
+import { periodBadge } from "@/lib/format";
+import { useCategories } from "@/lib/queries";
+import { ACCOUNTS, TABS, TAB_TYPE, errorText, useTransactionForm } from "@/lib/use-transaction-form";
 
 const GLASS =
   "border border-white/40 bg-white/15 backdrop-blur-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_-2px_6px_rgba(255,255,255,0.6),inset_0_2px_8px_rgba(154,168,189,0.2),0_8px_30px_rgba(255,255,255,0.12)]";
@@ -36,7 +18,7 @@ const FIELD = `${GLASS} !bg-[rgba(221,230,245,0.15)]`;
 
 function BackgroundLayer() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8]">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#F1E9E8] lg:hidden">
       <div
         className="absolute left-0 right-0 top-0 h-[300px]"
         style={{
@@ -156,12 +138,7 @@ function AssetSlot({ placeholder, value, onChange }) {
   );
 }
 
-function TransferPanel({ from, to, fee, setFrom, setTo, onFee }) {
-  const swap = () => {
-    setFrom(to);
-    setTo(from);
-  };
-
+function TransferPanel({ from, to, fee, setFrom, setTo, swap, onFee, accountNames }) {
   return (
     <div className="flex min-h-[325px] flex-col items-center gap-3 pt-2">
       <AssetSlot placeholder="Aset dari" value={from} onChange={setFrom} />
@@ -178,8 +155,8 @@ function TransferPanel({ from, to, fee, setFrom, setTo, onFee }) {
       <AssetSlot placeholder="Aset ke" value={to} onChange={setTo} />
 
       <datalist id="daftar-aset">
-        {ACCOUNTS.map((a) => (
-          <option key={a.label} value={a.label} />
+        {accountNames.map((name) => (
+          <option key={name} value={name} />
         ))}
       </datalist>
 
@@ -191,87 +168,62 @@ function TransferPanel({ from, to, fee, setFrom, setTo, onFee }) {
         aria-label="Biaya admin"
         className={`mt-8 h-[45px] w-[175px] rounded-[10px] px-4 text-center text-[20px] font-medium text-[#6A6E79] placeholder:text-[#6A6E79]/60 focus:outline-none ${FIELD}`}
       />
-      <p className="text-center text-[13px] text-[#6A6E79]/70">Transfer antar aset menunggu dukungan server.</p>
     </div>
   );
 }
 
-/** Gabungkan pesan validasi per field dari BE; kalau tidak ada, pakai pesan umum. */
-function errorText(error) {
-  const messages = Object.values(error.fieldErrors ?? {}).flat();
-  return messages.length > 0 ? messages.join(" ") : error.message;
-}
-
 export default function TambahTransaksiPage() {
   const router = useRouter();
-  const invalidate = useInvalidate();
-  const today = useToday();
-  const hydrated = useHydrated();
-  const { data: accounts } = useAccounts();
+  const form = useTransactionForm();
+  const tabsRef = useRef(null);
+  const panelRef = useRef(null);
 
-  const [tab, setTab] = useState("Pengeluaran");
-  const [categoryId, setCategoryId] = useState(null);
-  const [account, setAccount] = useState("Tunai");
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
-  const [chosenDate, setChosenDate] = useState(null);
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [fee, setFee] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-
-  const isTransfer = tab === "Transfer";
-  // Default tanggal transaksi = hari ini (null sampai hydrate, lihat useToday).
-  const date = chosenDate ?? (today ? selectionFromDate(parseLocalDate(today), "harian") : null);
-
-  const handleAmount = (e) => setAmount(formatDigitsInput(e.target.value));
-  const handleFee = (e) => setFee(formatDigitsInput(e.target.value));
-
-  const changeTab = (t) => {
-    setTab(t);
-    setCategoryId(null);
-    setFrom("");
-    setTo("");
-    setFee("");
-    setError(null);
+  // Tablet (≥ md): klik di luar tab dan panel (latar) membatalkan, sama seperti tombol kembali.
+  // Di HP tetap lewat tombol kembali, agar sentuhan tak sengaja di tepi layar tidak membatalkan.
+  const handleBackdropClick = (e) => {
+    // Klik di popup kalender (portal di luar <main>) tetap bubble ke sini lewat pohon React.
+    if (!e.currentTarget.contains(e.target)) return;
+    if (tabsRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+    if (!window.matchMedia("(min-width: 48rem) and (max-width: 63.999rem)").matches) return;
+    router.push("/homepage");
   };
-
-  // Transfer belum didukung BE, jadi tombol Catat dinonaktifkan di tab itu.
-  const canSubmit = !isTransfer && Boolean(categoryId) && parseRupiahInput(amount) > 0 && Boolean(date);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!canSubmit || submitting) return;
-
-    setSubmitting(true);
-    setError(null);
-    try {
-      await createTransaction({
-        type: TAB_TYPE[tab],
-        amount: parseRupiahInput(amount),
-        // Kalau daftar akun gagal dimuat, BE memakai akun default user.
-        accountId: accounts?.data?.find((a) => a.name === account)?.id,
-        categoryId,
-        note: note.trim() || undefined,
-        occurredAt: toOccurredAt(date),
-      });
-      // Header, riwayat, dan statistik ikut diperbarui.
-      await invalidate("/transactions");
-      router.push("/homepage");
-    } catch (err) {
-      setError(err);
-      setSubmitting(false);
-    }
-  };
+  const {
+    tab,
+    changeTab,
+    isTransfer,
+    categoryId,
+    setCategoryId,
+    account,
+    setAccount,
+    accountNames,
+    amount,
+    handleAmount,
+    note,
+    setNote,
+    date,
+    setChosenDate,
+    today,
+    hydrated,
+    from,
+    setFrom,
+    to,
+    setTo,
+    swapAssets,
+    fee,
+    handleFee,
+    canSubmit,
+    submitting,
+    error,
+    handleSubmit,
+  } = form;
 
   const badge = date ? periodBadge(date) : { top: "", bottom: "" };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#F1ECF5] font-[Poppins,sans-serif]">
+    <main onClick={handleBackdropClick} className="relative min-h-screen overflow-hidden bg-[#F1ECF5] font-[Poppins,sans-serif]">
       <BackgroundLayer />
 
-      <div className="relative z-10 mx-auto w-full max-w-[480px] px-[11px] pb-6 pt-6">
+      <div className="relative z-10 mx-auto w-full max-w-[480px] px-[11px] pb-6 pt-6 lg:hidden">
         <Link
           href="/homepage"
           aria-label="Kembali"
@@ -281,6 +233,7 @@ export default function TambahTransaksiPage() {
         </Link>
         {/* Tab */}
         <div
+          ref={tabsRef}
           role="tablist"
           className="absolute inset-x-0 top-16 z-10 mx-auto flex h-[48px] w-[calc(100%-40px)] items-center rounded-[25px] border border-white bg-white/50 p-1 shadow-[0_4px_8px_rgba(154,168,189,0.2)] backdrop-blur-[4px]"
         >
@@ -302,12 +255,21 @@ export default function TambahTransaksiPage() {
           ))}
         </div>
         <div className="relative mt-3">
-          <div className="mt-[27px] rounded-[30px] border border-white/50 bg-white/50 px-[18px] pb-4 pt-[48px] shadow-[inset_0_-10px_4px_rgba(255,255,255,0.25),0_8px_4px_rgba(255,255,255,0.12),inset_0_4px_4px_rgba(154,168,189,0.2)] backdrop-blur-[7.5px]">
+          <div ref={panelRef} className="mt-[27px] rounded-[30px] border border-white/50 bg-white/50 px-[18px] pb-4 pt-[48px] shadow-[inset_0_-10px_4px_rgba(255,255,255,0.25),0_8px_4px_rgba(255,255,255,0.12),inset_0_4px_4px_rgba(154,168,189,0.2)] backdrop-blur-[7.5px]">
             {/* Nonaktif sampai hydrate: ketikan sebelum itu akan hilang (lihat useHydrated). */}
             <fieldset disabled={!hydrated} className="m-0 min-w-0 border-0 p-0">
               {/* Kategori */}
               {isTransfer ? (
-                <TransferPanel from={from} to={to} fee={fee} setFrom={setFrom} setTo={setTo} onFee={handleFee} />
+                <TransferPanel
+                  from={from}
+                  to={to}
+                  fee={fee}
+                  setFrom={setFrom}
+                  setTo={setTo}
+                  swap={swapAssets}
+                  onFee={handleFee}
+                  accountNames={accountNames}
+                />
               ) : (
                 <CategoryGrid type={TAB_TYPE[tab]} selectedId={categoryId} onSelect={setCategoryId} />
               )}
@@ -379,6 +341,8 @@ export default function TambahTransaksiPage() {
           </div>
         </div>
       </div>
+
+      <DesktopTransactionModal form={form} />
     </main>
   );
 }

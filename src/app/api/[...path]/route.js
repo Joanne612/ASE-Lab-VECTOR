@@ -11,6 +11,7 @@ const ALLOWED_RESOURCES = new Set([
   "users",
   "accounts",
   "transactions",
+  "transfers",
   "categories",
   "savings",
   "goals",

@@ -57,6 +57,10 @@ export const useIncomeIdeas = (gapPerMonth) =>
 export const createTransaction = (payload) =>
   apiFetch("/transactions", { method: "POST", body: payload });
 
+/** Transfer antar akun; biaya admin (fee) dicatat BE sebagai pengeluaran dari akun asal. */
+export const createTransfer = (payload) =>
+  apiFetch("/transfers", { method: "POST", body: payload });
+
 export const saveSavingRatio = (payload) =>
   apiFetch("/savings/ratio", { method: "PUT", body: payload });
 
