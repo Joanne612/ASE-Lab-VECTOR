@@ -4,49 +4,9 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Icon from "@/components/Icon";
+import IncomeIdeas from "@/components/IncomeIdeas";
 import { formatRupiah } from "@/lib/format";
-import { useIncomeIdeas } from "@/lib/queries";
-
-/* hari per satuan waktu (pendekatan) */
-const UNIT_DAYS = { hari: 1, minggu: 7, bulan: 30, tahun: 365 };
-const UNIT_LABEL = { hari: "hari", minggu: "minggu", bulan: "bulan", tahun: "tahun" };
-
-/* ---------- PERHITUNGAN ---------- */
-function hitungCatatan(p) {
-  const tabungan = Number(p.get("tabungan")) || 0;
-  const durasi = Number(p.get("durasi")) || 0;
-  const durasiUnit = p.get("durasiUnit") || "bulan";
-  const penerimaan = Number(p.get("penerimaan")) || 0;
-  const frekuensi = Number(p.get("frekuensi")) || 0;
-  const frekuensiUnit = p.get("frekuensiUnit") || "minggu";
-
-  const totalHari = durasi * (UNIT_DAYS[durasiUnit] ?? 30);
-  const jarakHari = frekuensi * (UNIT_DAYS[frekuensiUnit] ?? 7);
-  const kali = jarakHari > 0 ? Math.floor(totalHari / jarakHari) : 0;
-
-  const totalMasuk = kali * penerimaan;
-  const kekurangan = Math.max(0, tabungan - totalMasuk);
-  const sisihkan = kali > 0 ? Math.ceil(tabungan / kali) : 0; // per penerimaan
-  const persen = penerimaan > 0 ? Math.min(100, Math.round((sisihkan / penerimaan) * 100)) : 0;
-  // BE mengurutkan ide berdasarkan kekurangan per bulan.
-  const kekuranganPerBulan = totalHari > 0 ? kekurangan / (totalHari / UNIT_DAYS.bulan) : 0;
-
-  return {
-    tabungan,
-    durasi,
-    durasiUnit,
-    penerimaan,
-    frekuensi,
-    frekuensiUnit,
-    kali,
-    totalMasuk,
-    kekurangan,
-    kekuranganPerBulan,
-    sisihkan,
-    persen,
-    cukup: kali > 0 && kekurangan === 0,
-  };
-}
+import { UNIT_LABEL, hitungCatatan } from "@/lib/saving-plan";
 
 /* ---------- KOMPONEN HASIL ---------- */
 
@@ -76,49 +36,6 @@ function CatatanRow({ label, value, strong = false }) {
   );
 }
 
-function IdeTambahan({ gapPerBulan }) {
-  const { data, error, mutate } = useIncomeIdeas(gapPerBulan);
-
-  if (!data && !error) {
-    return (
-      <ul className="flex flex-col gap-5" aria-busy="true" aria-label="Memuat ide">
-        {[0, 1, 2].map((i) => (
-          <li key={i} className="h-[40px] animate-pulse rounded bg-white/40" />
-        ))}
-      </ul>
-    );
-  }
-
-  if (!data) {
-    return (
-      <p className="text-[15px] text-[#8A8D99]">
-        Gagal memuat ide.{" "}
-        <button type="button" onClick={() => mutate()} className="font-medium text-[#7A53B1] underline">
-          Coba lagi
-        </button>
-      </p>
-    );
-  }
-
-  if (data.data.length === 0) {
-    return <p className="text-[15px] text-[#8A8D99]">Belum ada ide untuk saat ini.</p>;
-  }
-
-  return (
-    <ul className="flex flex-col gap-5">
-      {data.data.map((ide) => (
-        <li key={ide.id}>
-          <p className="text-[17px] text-[#6A6E79]">{ide.title}</p>
-          <p className="mt-1 text-[13px] leading-snug text-[#8A8D99]">{ide.description}</p>
-          <p className="mt-1 text-[13px] font-medium text-[#8A6FCF]">
-            ± Rp {formatRupiah(ide.estMonthlyMin)}–{formatRupiah(ide.estMonthlyMax)} / bulan
-          </p>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function HasilPanel() {
   const router = useRouter();
   const params = useSearchParams();
@@ -142,7 +59,7 @@ function HasilPanel() {
       <div className="mt-4">
         <SectionTitle>Tambahan uang</SectionTitle>
         <GlassCard className="mt-4 px-5 py-4">
-          <IdeTambahan gapPerBulan={c.kekuranganPerBulan} />
+          <IncomeIdeas gapPerBulan={c.kekuranganPerBulan} />
         </GlassCard>
       </div>
 

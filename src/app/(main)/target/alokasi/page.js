@@ -7,15 +7,7 @@ import DonutChart from "@/components/DonutChart";
 import Icon from "@/components/Icon";
 import { formatRupiah } from "@/lib/format";
 import { useRatioCalculation } from "@/lib/queries";
-
-const PERIOD_LABEL = { DAILY: "hari", WEEKLY: "minggu", MONTHLY: "bulan" };
-
-// Tiga pos alokasi BE; totalnya selalu 100%.
-const POSTS = [
-  { key: "needs", pctKey: "needsPct", name: "Kebutuhan", color: "#E3D3FA", dark: "#C9B0F0" },
-  { key: "savings", pctKey: "savingsPct", name: "Tabungan", color: "#FF9E96", dark: "#F27A70" },
-  { key: "fun", pctKey: "funPct", name: "Hiburan", color: "#BDE3F7", dark: "#8FCBEA" },
-];
+import { PERIOD_LABEL, POSTS } from "@/lib/use-target-form";
 
 const TIP_STYLE = {
   success: "border-[#C9E9B0] bg-[#E6F4DA]/70",

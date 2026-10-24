@@ -1,63 +1,24 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
-import { formatDigitsInput, parseRupiahInput } from "@/lib/format";
-import { saveSavingRatio, useInvalidate, useSavingRatio } from "@/lib/queries";
-
-// Nilai enum IncomePeriod di BE.
-const PERIODS = [
-  { key: "DAILY", label: "Hari" },
-  { key: "WEEKLY", label: "Minggu" },
-  { key: "MONTHLY", label: "Bulan" },
-];
-
-// Dipakai kalau GET /savings/ratio gagal; sama dengan rasio default BE
-const FALLBACK_RATIO = { needsPct: 60, savingsPct: 30, funPct: 10 };
+import DesktopTarget from "@/components/target/DesktopTarget";
+import { useSavingRatio } from "@/lib/queries";
+import { PERIODS, useTargetForm } from "@/lib/use-target-form";
 
 const PANEL_CLASS = "mx-3 mb-8 mt-5 rounded-[28px] border border-white/70 bg-white/30 px-5 pb-6 pt-6 backdrop-blur-xl";
 
 function TargetForm({ saved, defaultRatio }) {
   const router = useRouter();
-  const invalidate = useInvalidate();
+  const { period, setPeriod, amount, setAmount, submitting, error, submit } = useTargetForm({ saved, defaultRatio });
 
-  // Diisi dari pemasukan yang terakhir disimpan, supaya user tidak mengetik ulang.
-  const [period, setPeriod] = useState(saved?.period ?? "DAILY");
-  const [amount, setAmount] = useState(
-    saved?.incomeAmount ? formatDigitsInput(Math.round(Number(saved.incomeAmount))) : "",
-  );
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const value = parseRupiahInput(amount);
-    if (!value) {
-      setError("Isi jumlah uang jajan terlebih dahulu.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError("");
-    const ratio = saved ?? defaultRatio ?? FALLBACK_RATIO;
-
-    try {
-      // Disimpan agar analisis target tabungan di BE memakai pemasukan ini
-      await saveSavingRatio({
-        needsPct: ratio.needsPct,
-        savingsPct: ratio.savingsPct,
-        funPct: ratio.funPct,
-        incomeAmount: value,
-        period,
-      });
-      await invalidate("/savings/ratio");
-      router.push(`/target/alokasi?${new URLSearchParams({ jumlah: value, periode: period })}`);
-    } catch (err) {
-      setError(err.message);
-      setSubmitting(false);
-    }
+    submit((value, chosenPeriod) => {
+      router.push(`/target/alokasi?${new URLSearchParams({ jumlah: value, periode: chosenPeriod })}`);
+      return true;
+    });
   };
 
   return (
@@ -100,7 +61,7 @@ function TargetForm({ saved, defaultRatio }) {
           type="text"
           inputMode="numeric"
           value={amount}
-          onChange={(e) => setAmount(formatDigitsInput(e.target.value))}
+          onChange={(e) => setAmount(e.target.value)}
           placeholder="Jumlah"
           aria-label="Jumlah uang jajan"
           className="min-w-0 flex-1 bg-transparent text-[18px] text-[#6A6E79] outline-none placeholder:text-[#A7A9B3]"
@@ -131,8 +92,20 @@ export default function TargetPage() {
 
   // Form baru dirender setelah data tersimpan dimuat, supaya prefill tidak menimpa ketikan user
   if (!data && !error) {
-    return <div className={`${PANEL_CLASS} h-[420px] animate-pulse`} aria-busy="true" aria-label="Memuat" />;
+    return (
+      <>
+        <div className={`${PANEL_CLASS} h-[420px] animate-pulse lg:hidden`} aria-busy="true" aria-label="Memuat" />
+        <div className="mx-[11px] hidden h-[382px] animate-pulse rounded-[25px] bg-white/40 lg:-mt-[11px] lg:block" aria-busy="true" aria-label="Memuat" />
+      </>
+    );
   }
 
-  return <TargetForm saved={data?.data ?? null} defaultRatio={data?.default} />;
+  return (
+    <>
+      <div className="lg:hidden">
+        <TargetForm saved={data?.data ?? null} defaultRatio={data?.default} />
+      </div>
+      <DesktopTarget saved={data?.data ?? null} defaultRatio={data?.default} />
+    </>
+  );
 }
