@@ -94,17 +94,6 @@ Browser  ──►  Next.js (BFF)  ──►  Backend API
 
 5. Buka [http://localhost:3000](http://localhost:3000).
 
-## Konfigurasi
-
-Semua variabel di bawah bersifat **server-only** (tidak diberi prefix `NEXT_PUBLIC_`), sehingga tidak ikut ter-bundle ke browser.
-
-| Variabel | Wajib | Keterangan |
-| --- | --- | --- |
-| `ASE_BACKEND_URL` | Ya | Base URL backend, termasuk prefix `/api/v1`. Contoh: `http://localhost:4000/api/v1`. |
-| `BFF_SHARED_SECRET` | Tidak | Secret bersama dengan backend (nilainya sama dengan `BFF_SHARED_SECRET` di env backend). Dipakai untuk meneruskan IP klien asli agar rate limit dihitung per pengguna. Kosongkan untuk menonaktifkan. |
-
-> Backend secara default memakai port 3000 yang sama dengan `next dev`. Jalankan backend lokal di port lain, misalnya `PORT=4000`.
-
 ## Scripts
 
 | Perintah | Fungsi |
@@ -116,9 +105,9 @@ Semua variabel di bawah bersifat **server-only** (tidak diberi prefix `NEXT_PUBL
 
 ## Deployment
 
-Aplikasi ini siap di-deploy ke [Vercel](https://vercel.com). Silahkan atur `ASE_BACKEND_URL` (dan `BFF_SHARED_SECRET` bila dipakai) di pengaturan environment, lalu deploy.
+Aplikasi ini siap di-deploy ke [Vercel](https://vercel.com). 
 
-Backend dapat mengalami cold start (scale-to-zero) saat lama tidak dipakai. Karena itu `src/instrumentation-client.js` memanggil `/api/health` begitu halaman dimuat, supaya backend sudah bangun sebelum pengguna menekan tombol masuk.
+URL aplikasi: [lurahonline-banjarsarigarut.com](https://lurahonline-banjarsarigarut.com/)
 
 ## Tim
 
