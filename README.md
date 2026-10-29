@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Finby
 
-## Getting Started
+Aplikasi pengelola keuangan pribadi untuk membantu mencatat pemasukan dan pengeluaran, mengatur alokasi uang jajan, merencanakan tabungan, dan belajar berinvestasi lewat simulasi saham dan reksa dana.
 
-First, run the development server:
+Repositori ini berisi **frontend** (Next.js). Data disimpan dan diproses oleh backend terpisah yang diakses lewat lapisan BFF (Backend for Frontend) di dalam aplikasi ini.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Fitur
+
+| Fitur | Deskripsi |
+| --- | --- |
+| **Autentikasi** | Daftar dan masuk dengan akun Gmail. Sesi disimpan di cookie `httpOnly` dan token diperbarui otomatis. |
+| **Beranda** | Ringkasan keuangan per periode (total pemasukan dan pengeluaran). |
+| **Transaksi** | Catat pengeluaran, pemasukan, dan transfer antar akun (Tunai, Kartu Bank, Tabungan). Biaya admin transfer dicatat sebagai pengeluaran dari akun asal. |
+| **Statistik** | Diagram donat pengeluaran dan pemasukan per kategori pada periode yang dipilih. |
+| **Target** | Isi total uang jajan per hari, minggu, atau bulan, lalu dapatkan alokasi ke tiga pos: Kebutuhan, Tabungan, dan Hiburan (default 60% / 30% / 10%) beserta tips. |
+| **Ide** | Rencana tabungan: masukkan target tabungan, durasi, jumlah dan frekuensi penerimaan, lalu lihat berapa yang perlu disisihkan. Jika masih kurang, aplikasi menampilkan ide tambahan penghasilan. |
+| **Simulasi investasi** | Simulasi saham dan reksa dana dengan pilihan instrumen, pratinjau, dan sesi simulasi bertahap sampai ke hasil untung atau rugi. Daftar instrumen (`/saham`, `/reksadana`) dapat dilihat tanpa login. |
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org) 16 (App Router, Server Actions, Route Handlers)
+- [React](https://react.dev) 19
+- [Tailwind CSS](https://tailwindcss.com) 4
+- [SWR](https://swr.vercel.app) untuk pengambilan dan cache data
+- [Poppins](https://fonts.google.com/specimen/Poppins) lewat `next/font`
+- ESLint 9 dengan `eslint-config-next`
+
+## Arsitektur
+
+```
+Browser  ──►  Next.js (BFF)  ──►  Backend API
+          /api/<resource>     ASE_BACKEND_URL
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Browser tidak pernah memanggil backend langsung. Semua request lewat `/api/<resource>` (`src/app/api/[...path]/route.js`), lalu diteruskan ke backend dengan token dari cookie `httpOnly`.
+- Login, registrasi, dan logout memakai Server Action (`src/app/actions/auth.js`).
+- Hanya resource tertentu yang diteruskan (`users`, `accounts`, `transactions`, `transfers`, `categories`, `savings`, `goals`, `income-ideas`, `simulation`). Endpoint admin sengaja tidak dibuka.
+- `src/proxy.js` mengarahkan pengguna yang belum login dari halaman terproteksi ke `/`, dan pengguna yang sudah login dari `/` atau `/register` ke `/homepage`.
+- Respons berisi data keuangan pribadi dikirim dengan `Cache-Control: private, no-store`.
+- Header keamanan (CSP `frame-ancestors`, `X-Frame-Options`, `X-Content-Type-Options`, dan lainnya) diatur di `next.config.mjs`.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Struktur Proyek
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+.
+├── public/                  # Aset statis (ikon, ilustrasi, background)
+└── src/
+    ├── app/
+    │   ├── (main)/          # Halaman utama: homepage, statistik, target, ide, simulasi
+    │   ├── actions/         # Server Action (login, register, logout)
+    │   ├── api/             # BFF: proxy ke backend dan endpoint /health
+    │   ├── register/        # Halaman daftar
+    │   ├── saham/           # Daftar, detail, dan alur investasi saham
+    │   ├── reksadana/       # Daftar, detail, dan alur investasi reksa dana
+    │   └── transaksi/       # Tambah transaksi
+    ├── components/          # Komponen UI (auth, home, shell, simulasi, target, transaksi, dll.)
+    ├── lib/                 # Query SWR, helper API, format, simulasi, rencana tabungan, hook form
+    │   └── server/          # Kode server-only (akses backend dan sesi)
+    └── proxy.js             # Proteksi route berbasis cookie sesi
+```
 
-## Learn More
+## Prasyarat
 
-To learn more about Next.js, take a look at the following resources:
+- Node.js 20.9 atau lebih baru
+- npm
+- Backend Finby yang sudah berjalan (lihat bagian Konfigurasi)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Instalasi dan Menjalankan
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Clone repositori:
 
-## Deploy on Vercel
+   ```bash
+   git clone https://github.com/Joanne612/ASE-Lab-VECTOR.git
+   cd ASE-Lab-VECTOR
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. Pasang dependensi:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   npm install
+   ```
+
+3. Salin file environment lalu sesuaikan nilainya:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. Jalankan server pengembangan:
+
+   ```bash
+   npm run dev
+   ```
+
+5. Buka [http://localhost:3000](http://localhost:3000).
+
+## Konfigurasi
+
+Semua variabel di bawah bersifat **server-only** (tidak diberi prefix `NEXT_PUBLIC_`), sehingga tidak ikut ter-bundle ke browser.
+
+| Variabel | Wajib | Keterangan |
+| --- | --- | --- |
+| `ASE_BACKEND_URL` | Ya | Base URL backend, termasuk prefix `/api/v1`. Contoh: `http://localhost:4000/api/v1`. |
+| `BFF_SHARED_SECRET` | Tidak | Secret bersama dengan backend (nilainya sama dengan `BFF_SHARED_SECRET` di env backend). Dipakai untuk meneruskan IP klien asli agar rate limit dihitung per pengguna. Kosongkan untuk menonaktifkan. |
+
+> Backend secara default memakai port 3000 yang sama dengan `next dev`. Jalankan backend lokal di port lain, misalnya `PORT=4000`.
+
+## Scripts
+
+| Perintah | Fungsi |
+| --- | --- |
+| `npm run dev` | Menjalankan server pengembangan |
+| `npm run build` | Membuat build produksi |
+| `npm run start` | Menjalankan hasil build produksi |
+| `npm run lint` | Menjalankan ESLint |
+
+## Deployment
+
+Aplikasi ini siap di-deploy ke [Vercel](https://vercel.com). Silahkan atur `ASE_BACKEND_URL` (dan `BFF_SHARED_SECRET` bila dipakai) di pengaturan environment, lalu deploy.
+
+Backend dapat mengalami cold start (scale-to-zero) saat lama tidak dipakai. Karena itu `src/instrumentation-client.js` memanggil `/api/health` begitu halaman dimuat, supaya backend sudah bangun sebelum pengguna menekan tombol masuk.
+
+## Tim
+
+| Nama Anggota | Peran |
+| --- | --- |
+|Riska Dea Bakri|System Analyst|
+|Preciosa Leluna Andelfin |UI/UX|
+|Joanne Agnesia Nempung|Frontend|
+|Adison Simanullang|Backend|
+|Yudha Prawira Sugiharto|Quality Assurance|
