@@ -107,7 +107,7 @@ Browser  ──►  Next.js (BFF)  ──►  Backend API
 
 Aplikasi ini di deploy ke [Vercel](https://vercel.com). 
 
-URL aplikasi: [lurahonline-banjarsarigarut.com](https://lurahonline-banjarsarigarut.com/)
+URL aplikasi: [finby-app.vercel.app](https://finby-app.vercel.app/)
 
 ## Tim
 
